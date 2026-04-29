@@ -7,7 +7,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import SkeletonCard from '../components/SkeletonCard';
 import EmptyState from '../components/EmptyState';
 import { api } from '../lib/api';
-import { USE_MOCK, mockChallenges, filterSubmissions } from '../lib/mockData';
+import { USE_MOCK, mockChallenges, filterSubmissions, mockUsers } from '../lib/mockData';
 
 const defaultClanForm = { name: '', tag: '', description: '' };
 
@@ -120,6 +120,20 @@ const AdminPanel = () => {
         return data.length > 0 ? data : mockAdminClans;
       } catch {
         return mockAdminClans;
+      }
+    },
+  });
+
+  const usersQuery = useQuery({
+    queryKey: ['admin-users'],
+    enabled: activeTab === 'permissions',
+    queryFn: async () => {
+      try {
+        const res = await api.get('/api/users');
+        const data = res.data.data || [];
+        return data.length > 0 ? data : mockUsers;
+      } catch {
+        return mockUsers;
       }
     },
   });
@@ -239,6 +253,16 @@ const AdminPanel = () => {
     }
   };
 
+  const onUpdateUserRole = async (userId, newRole) => {
+    try {
+      await api.put(`/api/users/${userId}/role`, { role: newRole });
+      toast.success('Role updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update role');
+    }
+  };
+
   const submissions = submissionsQuery.data?.data || [];
   const reviewMeta = submissionsQuery.data?.meta || {};
 
@@ -262,6 +286,9 @@ const AdminPanel = () => {
         </button>
         <button className={`px-4 py-2 rounded-lg ${activeTab === 'manage' ? 'bg-accent text-white' : ''}`} onClick={() => setActiveTab('manage')}>
           Manage Challenges
+        </button>
+        <button className={`px-4 py-2 rounded-lg ${activeTab === 'permissions' ? 'bg-accent text-white' : ''}`} onClick={() => setActiveTab('permissions')}>
+          Permissions
         </button>
         <button className={`px-4 py-2 rounded-lg ${activeTab === 'clans' ? 'bg-accent text-white' : ''}`} onClick={() => setActiveTab('clans')}>
           Clans
@@ -584,6 +611,47 @@ const AdminPanel = () => {
             )}
           </Card>
         </div>
+      )}
+
+      {activeTab === 'permissions' && (
+        <Card>
+          <div className="space-y-6">
+            <h2 className="text-section-title font-bold mb-4">Manage Permissions</h2>
+            {usersQuery.isLoading ? (
+              <div className="space-y-3"><SkeletonCard /><SkeletonCard /></div>
+            ) : (usersQuery.data || []).length === 0 ? (
+              <EmptyState title="No users found" description="There are no users registered." />
+            ) : (
+              <div className="space-y-4">
+                {(usersQuery.data || []).map((user) => (
+                  <div key={user._id} className="border border-glass-border rounded-xl p-4 flex flex-wrap gap-3 justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
+                        <FiUser size={18} className="text-accent" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-primary">{user.username}</h3>
+                        <p className="text-secondary text-xs">{user.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <select
+                        className="field-select text-sm py-2 min-w-[140px]"
+                        value={user.role}
+                        onChange={(e) => onUpdateUserRole(user._id, e.target.value)}
+                      >
+                        <option value="user">Member</option>
+                        <option value="moderator">Moderator</option>
+                        <option value="admin">Admin</option>
+                        <option value="super-admin">Super Admin</option>
+                      </select>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Card>
       )}
 
       <ConfirmDialog
