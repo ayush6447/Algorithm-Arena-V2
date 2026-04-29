@@ -7,6 +7,7 @@ import EmptyState from '../components/EmptyState';
 import SkeletonCard from '../components/SkeletonCard';
 import PageHeader from '../components/PageHeader';
 import { api } from '../lib/api';
+import { USE_MOCK } from '../lib/mockData';
 import { useAuth } from '../context/useAuth';
 
 const mockIndividualData = [
@@ -124,7 +125,10 @@ const Leaderboard = () => {
     queryKey: ['leaderboard', filters, leaderType],
     enabled: leaderType === 'individual',
     queryFn: async () => {
-      if (USE_MOCK) return paginate(mockLeaderboardMembers, filters);
+      if (USE_MOCK) {
+        // Use inline mock data when in mock mode
+        return { data: mockIndividualData, meta: { page: 1, totalPages: 1 } };
+      }
       const params = new URLSearchParams({
         window: filters.window,
         page: String(filters.page),

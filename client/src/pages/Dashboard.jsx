@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { FiClock, FiFlag, FiGrid, FiList, FiTarget, FiTrendingUp, FiCpu, FiZap, FiSearch, FiAward, FiActivity } from 'react-icons/fi';
+import { FiClock, FiCheckCircle, FiFlag, FiGrid, FiList, FiTarget, FiTrendingUp, FiCpu, FiZap, FiSearch, FiAward, FiActivity } from 'react-icons/fi';
 import { api } from '../lib/api';
 import SkeletonCard from '../components/SkeletonCard';
 import EmptyState from '../components/EmptyState';
