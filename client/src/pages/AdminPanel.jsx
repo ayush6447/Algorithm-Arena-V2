@@ -256,6 +256,26 @@ const AdminPanel = () => {
     }
   };
 
+  const onApproveRequest = async (clanId, userId) => {
+    try {
+      await api.post(`/api/clans/${clanId}/approve/${userId}`);
+      toast.success('Request approved');
+      queryClient.invalidateQueries({ queryKey: ['admin-clans'] });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to approve request');
+    }
+  };
+
+  const onRejectRequest = async (clanId, userId) => {
+    try {
+      await api.post(`/api/clans/${clanId}/reject/${userId}`);
+      toast.success('Request rejected');
+      queryClient.invalidateQueries({ queryKey: ['admin-clans'] });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to reject request');
+    }
+  };
+
   const onUpdateUserRole = async (userId, newRole) => {
     try {
       await api.put(`/api/users/${userId}/role`, { role: newRole });
@@ -618,6 +638,26 @@ const AdminPanel = () => {
                                 <span className="text-[10px] bg-accent/20 text-accent px-1.5 rounded font-bold">CHIEF</span>
                               )}
                               <button className="text-[10px] text-red-400 hover:text-red-500 transition-colors ml-1" onClick={() => onRemoveMember(clan._id, member._id)} title="Remove member">×</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {clan.requests && clan.requests.length > 0 && (
+                      <div className="border-t border-glass-border/40 pt-3 mt-3">
+                        <p className="text-xs font-bold text-yellow-500 uppercase tracking-widest mb-2">Pending Requests</p>
+                        <div className="flex flex-wrap gap-2">
+                          {clan.requests.map((reqUser) => (
+                            <div key={reqUser._id} className="flex items-center gap-2 bg-yellow-500/10 px-3 py-1.5 rounded-lg text-sm border border-yellow-500/30 text-yellow-400">
+                              <span className="font-medium">{reqUser.username}</span>
+                              <div className="flex gap-1 ml-1">
+                                <button className="text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded font-bold hover:bg-green-500/30 transition-colors flex items-center justify-center" onClick={() => onApproveRequest(clan._id, reqUser._id)} title="Approve">
+                                  ✓
+                                </button>
+                                <button className="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded font-bold hover:bg-red-500/30 transition-colors flex items-center justify-center" onClick={() => onRejectRequest(clan._id, reqUser._id)} title="Reject">
+                                  ✕
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
