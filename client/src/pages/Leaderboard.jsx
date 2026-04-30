@@ -10,23 +10,7 @@ import { api } from '../lib/api';
 import { USE_MOCK } from '../lib/mockData';
 import { useAuth } from '../context/useAuth';
 
-const mockIndividualData = [
-  { _id: 'u1', username: 'Nirakar', clan: 'Alpha Coders', totalPoints: 4500, solvedCount: 120, rank: 1 },
-  { _id: 'u2', username: 'Ashutosh', clan: 'Byte Knights', totalPoints: 3800, solvedCount: 95, rank: 2 },
-  { _id: 'u3', username: 'Soumya', clan: 'Stack Overlords', totalPoints: 3200, solvedCount: 82, rank: 3 },
-  { _id: 'u4', username: 'Priyanka', clan: 'Alpha Coders', totalPoints: 2900, solvedCount: 75, rank: 4 },
-  { _id: 'u5', username: 'Rohan', clan: 'Byte Knights', totalPoints: 2100, solvedCount: 50, rank: 5 },
-  { _id: 'u6', username: 'Ananya', clan: 'Data Dragons', totalPoints: 1800, solvedCount: 42, rank: 6 },
-  { _id: 'u7', username: 'Subham', clan: 'Algorithm Archers', totalPoints: 1500, solvedCount: 35, rank: 7 },
-];
 
-const mockClanData = [
-  { _id: 'c1', name: 'Alpha Coders', memberCount: 12, totalPoints: 12500, solvedCount: 450, rank: 1 },
-  { _id: 'c2', name: 'Byte Knights', memberCount: 8, totalPoints: 9800, solvedCount: 320, rank: 2 },
-  { _id: 'c3', name: 'Stack Overlords', memberCount: 15, totalPoints: 8600, solvedCount: 280, rank: 3 },
-  { _id: 'c4', name: 'Algorithm Archers', memberCount: 6, totalPoints: 5400, solvedCount: 150, rank: 4 },
-  { _id: 'c5', name: 'Data Dragons', memberCount: 10, totalPoints: 4200, solvedCount: 120, rank: 5 },
-];
 
 const Podium = ({ items, type }) => {
   // Sort items for podium: [2, 1, 3] layout
@@ -126,8 +110,7 @@ const Leaderboard = () => {
     enabled: leaderType === 'individual',
     queryFn: async () => {
       if (USE_MOCK) {
-        // Use inline mock data when in mock mode
-        return { data: mockIndividualData, meta: { page: 1, totalPages: 1 } };
+        return { data: [], meta: { page: 1, totalPages: 1 } };
       }
       const params = new URLSearchParams({
         window: filters.window,
@@ -155,16 +138,10 @@ const Leaderboard = () => {
 
   const rows = useMemo(() => {
     if (leaderType === 'clans') {
-      const apiClans = clanLeaderboardQuery.data || [];
-      return apiClans.length > 0 ? apiClans : mockClanData;
+      return clanLeaderboardQuery.data || [];
     }
     
-    // Merge API data with mock data for a populated "frontend-first" feel
-    const apiData = leaderboardQuery.data?.data || [];
-    const existingUsernames = new Set(apiData.map(u => u.username));
-    const filteredMock = mockIndividualData.filter(m => !existingUsernames.has(m.username));
-    
-    return [...apiData, ...filteredMock].sort((a, b) => b.totalPoints - a.totalPoints).map((u, i) => ({ ...u, rank: i + 1 }));
+    return leaderboardQuery.data?.data || [];
   }, [leaderboardQuery.data, clanLeaderboardQuery.data, leaderType]);
 
   const meta = leaderType === 'clans' ? { page: 1, totalPages: 1 } : (leaderboardQuery.data?.meta || {});

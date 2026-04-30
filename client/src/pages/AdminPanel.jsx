@@ -33,6 +33,7 @@ const AdminPanel = () => {
   const [editingClan, setEditingClan] = useState(null);
   const [deleteClanTarget, setDeleteClanTarget] = useState(null);
   const [clanSearch, setClanSearch] = useState('');
+  const [userSearch, setUserSearch] = useState('');
 
   const [reviewFilters, setReviewFilters] = useState({
     page: 1,
@@ -253,6 +254,26 @@ const AdminPanel = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-clans'] });
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to remove member');
+    }
+  };
+
+  const onApproveRequest = async (clanId, userId) => {
+    try {
+      await api.post(`/api/clans/${clanId}/approve/${userId}`);
+      toast.success('Request approved');
+      queryClient.invalidateQueries({ queryKey: ['admin-clans'] });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to approve request');
+    }
+  };
+
+  const onRejectRequest = async (clanId, userId) => {
+    try {
+      await api.post(`/api/clans/${clanId}/reject/${userId}`);
+      toast.success('Request rejected');
+      queryClient.invalidateQueries({ queryKey: ['admin-clans'] });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to reject request');
     }
   };
 
@@ -614,10 +635,34 @@ const AdminPanel = () => {
                           {clan.members.map((member) => (
                             <div key={member._id} className="flex items-center gap-2 bg-glass-surface px-3 py-1.5 rounded-lg text-sm border border-glass-border/30">
                               <span className="font-medium">{member.username}</span>
-                              {clan.chief?._id === member._id && (
+                              {clan.chief?._id === member._id ? (
                                 <span className="text-[10px] bg-accent/20 text-accent px-1.5 rounded font-bold">CHIEF</span>
+                              ) : (
+                                <button className="text-[10px] bg-yellow-500/20 text-yellow-400 px-1.5 rounded font-bold hover:bg-yellow-500/40 transition-colors" onClick={() => onAssignChief(clan._id, member._id)} title="Promote to Chief">
+                                  MAKE CHIEF
+                                </button>
                               )}
-                              <button className="text-[10px] text-red-400 hover:text-red-500 transition-colors ml-1" onClick={() => onRemoveMember(clan._id, member._id)} title="Remove member">×</button>
+                              <button className="text-[10px] text-red-400 hover:text-red-500 transition-colors ml-1 font-bold" onClick={() => onRemoveMember(clan._id, member._id)} title="Remove member">×</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {clan.requests && clan.requests.length > 0 && (
+                      <div className="border-t border-glass-border/40 pt-3 mt-3">
+                        <p className="text-xs font-bold text-yellow-500 uppercase tracking-widest mb-2">Pending Requests</p>
+                        <div className="flex flex-wrap gap-2">
+                          {clan.requests.map((reqUser) => (
+                            <div key={reqUser._id} className="flex items-center gap-2 bg-yellow-500/10 px-3 py-1.5 rounded-lg text-sm border border-yellow-500/30 text-yellow-400">
+                              <span className="font-medium">{reqUser.username}</span>
+                              <div className="flex gap-1 ml-1">
+                                <button className="text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded font-bold hover:bg-green-500/30 transition-colors flex items-center justify-center" onClick={() => onApproveRequest(clan._id, reqUser._id)} title="Approve">
+                                  ✓
+                                </button>
+                                <button className="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded font-bold hover:bg-red-500/30 transition-colors flex items-center justify-center" onClick={() => onRejectRequest(clan._id, reqUser._id)} title="Reject">
+                                  ✕
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -634,14 +679,31 @@ const AdminPanel = () => {
       {activeTab === 'permissions' && (
         <Card>
           <div className="space-y-6">
-            <h2 className="text-section-title font-bold mb-4">Manage Permissions</h2>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+              <h2 className="text-section-title font-bold">Manage Permissions</h2>
+              <div className="relative w-full md:w-64">
+                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary" />
+                <input
+                  className="field-input pl-10 py-2"
+                  placeholder="Search members..."
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                />
+              </div>
+            </div>
             {usersQuery.isLoading ? (
               <div className="space-y-3"><SkeletonCard /><SkeletonCard /></div>
-            ) : (usersQuery.data || []).length === 0 ? (
-              <EmptyState title="No users found" description="There are no users registered." />
+            ) : (usersQuery.data || []).filter(u => 
+              u.username.toLowerCase().includes(userSearch.toLowerCase()) || 
+              (u.email && u.email.toLowerCase().includes(userSearch.toLowerCase()))
+            ).length === 0 ? (
+              <EmptyState title="No users found" description={userSearch ? "No members match your search." : "There are no users registered."} />
             ) : (
               <div className="space-y-4">
-                {(usersQuery.data || []).map((user) => (
+                {(usersQuery.data || []).filter(u => 
+                  u.username.toLowerCase().includes(userSearch.toLowerCase()) || 
+                  (u.email && u.email.toLowerCase().includes(userSearch.toLowerCase()))
+                ).map((user) => (
                   <div key={user._id} className="border border-glass-border rounded-xl p-4 flex flex-wrap gap-3 justify-between items-center">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
