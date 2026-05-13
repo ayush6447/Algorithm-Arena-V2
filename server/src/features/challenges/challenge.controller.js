@@ -14,18 +14,36 @@ const getChallenges = async (req, res, next) => {
       search,
       difficulty,
       category,
+      setId,
       sortBy = 'createdAt',
       sortDir = 'desc',
     } = req.query;
 
     const filter = {};
+    const andConditions = [];
+
+    if (setId) filter.questionSetId = setId;
     if (difficulty) filter.difficulty = difficulty;
-    if (category) filter.category = category;
+    if (category) {
+      andConditions.push({
+        $or: [
+          { category: { $regex: category, $options: 'i' } },
+          { tags: { $in: [new RegExp(category, 'i')] } }
+        ]
+      });
+    }
     if (search) {
-      filter.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-      ];
+      andConditions.push({
+        $or: [
+          { title: { $regex: search, $options: 'i' } },
+          { description: { $regex: search, $options: 'i' } },
+          { tags: { $in: [new RegExp(search, 'i')] } }
+        ]
+      });
+    }
+
+    if (andConditions.length > 0) {
+      filter.$and = andConditions;
     }
 
     const sortOrder = sortDir === 'asc' ? 1 : -1;

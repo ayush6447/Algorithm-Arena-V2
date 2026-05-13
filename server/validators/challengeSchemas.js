@@ -13,6 +13,15 @@ const challengeCreateSchema = {
     difficulty: z.enum(['Easy', 'Medium', 'Hard']).default('Easy'),
     points: z.coerce.number().int().positive().max(10000),
     category: z.string().trim().min(2).max(80).default('Logic'),
+    tags: z.array(z.string()).optional(),
+    codeSnippets: z.array(
+      z.object({
+        lang: z.string(),
+        langSlug: z.string(),
+        code: z.string()
+      })
+    ).optional(),
+    link: z.string().url().optional().or(z.literal(''))
   }),
 };
 
@@ -24,6 +33,15 @@ const challengeUpdateSchema = {
       difficulty: z.enum(['Easy', 'Medium', 'Hard']).optional(),
       points: z.coerce.number().int().positive().max(10000).optional(),
       category: z.string().trim().min(2).max(80).optional(),
+      tags: z.array(z.string()).optional(),
+      codeSnippets: z.array(
+        z.object({
+          lang: z.string(),
+          langSlug: z.string(),
+          code: z.string()
+        })
+      ).optional(),
+      link: z.string().url().optional().or(z.literal(''))
     })
     .refine((obj) => Object.keys(obj).length > 0, 'At least one field is required'),
 };

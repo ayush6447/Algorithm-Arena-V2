@@ -475,10 +475,87 @@ const getAdminDashboardSummary = async (req, res, next) => {
   }
 };
 
+const getPendingTasks = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const now = new Date();
+
+    // 1. Get all published question sets that haven't expired
+    const activeSets = await mongoose.model('QuestionSet').find({
+      status: 'Published',
+      deadline: { $gt: now }
+    });
+
+    const activeSetIds = activeSets.map(s => s._id);
+
+    // 2. Get all challenges in these sets
+    const challengesInSets = await Challenge.find({
+      questionSetId: { $in: activeSetIds }
+    });
+
+    const challengeIds = challengesInSets.map(c => c._id);
+
+    // 3. Get user's accepted submissions for these challenges
+    const solvedSubmissions = await Submission.find({
+      userId,
+      challengeId: { $in: challengeIds },
+      status: 'Accepted'
+    }).distinct('challengeId');
+
+    const solvedChallengeIds = solvedSubmissions.map(id => id.toString());
+
+    // 4. Filter out solved challenges
+    const pendingChallenges = challengesInSets.filter(c => 
+      !solvedChallengeIds.includes(c._id.toString())
+    );
+
+    // 5. Map to the format the frontend expects
+    // We'll also include rejected ones as high priority
+    const rejectedSubmissions = await Submission.find({
+      userId,
+      challengeId: { $in: challengeIds },
+      status: 'Rejected'
+    }).distinct('challengeId');
+    
+    const rejectedIds = rejectedSubmissions.map(id => id.toString());
+
+    const tasks = pendingChallenges.map(ch => {
+      const parentSet = activeSets.find(s => s._id.toString() === ch.questionSetId?.toString());
+      const isRejected = rejectedIds.includes(ch._id.toString());
+      
+      return {
+        _id: ch._id,
+        title: ch.title,
+        difficulty: ch.difficulty,
+        points: ch.points,
+        category: ch.category,
+        deadline: parentSet ? parentSet.deadline : null,
+        isRejected,
+        // Calculate priority: Hard or Rejected = High, Medium = Med, others = Low
+        priority: (ch.difficulty === 'Hard' || isRejected) ? 'High' : (ch.difficulty === 'Medium' ? 'Med' : 'Low')
+      };
+    });
+
+    // Sort by priority (High > Med > Low) and then by deadline
+    const priorityMap = { 'High': 0, 'Med': 1, 'Low': 2 };
+    tasks.sort((a, b) => {
+      if (priorityMap[a.priority] !== priorityMap[b.priority]) {
+        return priorityMap[a.priority] - priorityMap[b.priority];
+      }
+      return new Date(a.deadline) - new Date(b.deadline);
+    });
+
+    return sendSuccess(res, { data: tasks });
+  } catch (err) {
+    return next(err);
+  }
+};
+
 module.exports = {
   getDashboardSummary,
   getProfileStats,
   getUserProfile,
-  getAdminDashboardSummary
+  getAdminDashboardSummary,
+  getPendingTasks
 };
 

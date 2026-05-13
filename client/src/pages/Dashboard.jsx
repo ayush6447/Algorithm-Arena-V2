@@ -179,7 +179,7 @@ const Dashboard = () => {
               </p>
               <div className="flex flex-wrap items-center gap-3">
                 <Link
-                  to="/missions"
+                  to={activeSet ? `/missions?setId=${activeSet._id}` : "/missions"}
                   className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-black text-white transition-all hover:opacity-90 active:scale-95"
                   style={{
                     background: "linear-gradient(135deg, rgb(var(--accent-rgb)), rgba(168,85,247,0.9))",
@@ -243,7 +243,7 @@ const Dashboard = () => {
           <div className="flex flex-wrap gap-2 items-center">
             <div className="relative flex-1 min-w-[120px] max-w-xs">
               <FiSearch size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-tertiary" />
-              <input className="field-input pl-8 text-xs py-1.5 h-8 w-full" placeholder="Search…"
+              <input className="field-input pl-8 text-xs py-1.5 h-8 w-full" placeholder="Search title, desc, or tags…"
                 value={filters.search} onChange={e => hf("search", e.target.value)} />
             </div>
             <div className="flex items-center gap-1 bg-white/[0.03] border border-white/[0.06] rounded-xl px-3 h-8">
@@ -301,8 +301,20 @@ const Dashboard = () => {
                           <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${diffCls}`}>{ch.difficulty}</span>
                           <span className="text-[10px] font-black text-accent">{ch.points} XP</span>
                         </div>
-                        <h3 className="text-sm font-bold leading-snug text-primary group-hover:text-accent transition-colors line-clamp-2">{ch.title}</h3>
-                        <p className="line-clamp-2 text-xs text-secondary leading-relaxed mt-auto">{ch.description}</p>
+                        <div className="flex items-center justify-between gap-2">
+                          <h3 className="text-sm font-bold leading-snug text-primary group-hover:text-accent transition-colors line-clamp-2">{ch.title}</h3>
+                          {new Date() - new Date(ch.createdAt || Date.now()) < 7 * 24 * 60 * 60 * 1000 && (
+                            <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-blue-500/20 text-blue-400">New</span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-1 mt-auto pt-2">
+                          {ch.tags && ch.tags.slice(0, 3).map((tag, idx) => (
+                            <span key={idx} className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-white/5 text-secondary border border-white/5">{tag}</span>
+                          ))}
+                          {(!ch.tags || ch.tags.length === 0) && ch.category && (
+                            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-white/5 text-secondary border border-white/5">{ch.category}</span>
+                          )}
+                        </div>
                       </ChallengeCard>
                     </Link>
                   </motion.div>

@@ -12,7 +12,10 @@ const initialQuestionState = {
   points: 100,
   category: '',
   description: '',
-  hints: ['']
+  hints: [''],
+  leetcodeSlug: '',
+  tags: [],
+  codeSnippets: []
 };
 
 const QuestionSetsTab = () => {
@@ -75,6 +78,30 @@ const QuestionSetsTab = () => {
     },
     onError: (err) => {
       toast.error(err.response?.data?.message || 'Failed to import challenges');
+    }
+  });
+
+  const fetchLeetCodeMutation = useMutation({
+    mutationFn: async ({ slug, index }) => {
+      const res = await api.get(`/api/challenges/fetch-leetcode-details?slug=${slug}`);
+      return { data: res.data.data, index };
+    },
+    onSuccess: ({ data, index }) => {
+      toast.success('LeetCode problem fetched!');
+      const newQs = [...form.questions];
+      newQs[index].title = data.title || '';
+      newQs[index].description = data.content || '';
+      newQs[index].difficulty = data.difficulty || 'Easy';
+      
+      const tags = (data.topicTags || []).map(t => t.name);
+      newQs[index].category = tags.length > 0 ? tags[0] : 'General';
+      newQs[index].tags = tags;
+      newQs[index].codeSnippets = data.codeSnippets || [];
+      
+      setForm({ ...form, questions: newQs });
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || 'Failed to fetch LeetCode details');
     }
   });
 
@@ -191,6 +218,33 @@ const QuestionSetsTab = () => {
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="md:col-span-3 bg-purple-500/5 border border-purple-500/20 p-3 rounded-lg flex flex-col md:flex-row gap-3 items-end">
+                          <div className="flex-1 w-full">
+                            <label className="field-label text-[10px] text-purple-400">Fetch from LeetCode (Slug or URL)</label>
+                            <input 
+                              className="field-input text-sm border-purple-500/30 focus:border-purple-500/60" 
+                              placeholder="e.g. two-sum or https://leetcode.com/problems/two-sum/" 
+                              value={q.leetcodeSlug || ''} 
+                              onChange={e => updateQuestion(i, 'leetcodeSlug', e.target.value)} 
+                            />
+                          </div>
+                          <button 
+                            type="button" 
+                            disabled={fetchLeetCodeMutation.isLoading && fetchLeetCodeMutation.variables?.index === i}
+                            onClick={() => {
+                              let slug = q.leetcodeSlug.trim();
+                              if (slug.includes('leetcode.com/problems/')) {
+                                slug = slug.split('leetcode.com/problems/')[1].split('/')[0];
+                              }
+                              if (!slug) return toast.error('Enter a LeetCode slug or URL');
+                              fetchLeetCodeMutation.mutate({ slug, index: i });
+                            }}
+                            className="bg-purple-500/20 text-purple-400 font-bold px-4 py-2 rounded-lg text-sm hover:bg-purple-500/30 transition-colors whitespace-nowrap"
+                          >
+                            {fetchLeetCodeMutation.isLoading && fetchLeetCodeMutation.variables?.index === i ? 'Fetching...' : 'Fetch Details'}
+                          </button>
+                        </div>
+                        
                         <div className="md:col-span-2">
                           <label className="field-label text-[10px]">Title</label>
                           <input required className="field-input text-sm" value={q.title} onChange={e => updateQuestion(i, 'title', e.target.value)} />

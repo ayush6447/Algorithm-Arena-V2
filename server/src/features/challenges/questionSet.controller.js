@@ -1,4 +1,5 @@
 const QuestionSet = require('./QuestionSet.model');
+const Challenge = require('./Challenge.model');
 const User = require('../users/User.model');
 const { sendSuccess } = require('../../../utils/response');
 const { logAudit } = require('../../../utils/audit');
@@ -37,6 +38,21 @@ const createQuestionSet = async (req, res, next) => {
       targetId: set._id,
       metadata: { title: set.title, weekNumber: set.weekNumber }
     });
+
+    // Create individual challenges for each question so they appear in Missions/Dashboard
+    if (req.body.questions && req.body.questions.length > 0) {
+      const challengesToInsert = req.body.questions.map(q => ({
+        title: q.title,
+        description: q.description,
+        difficulty: q.difficulty || 'Easy',
+        points: q.points || 100,
+        category: q.category || 'Logic',
+        tags: q.tags || [],
+        codeSnippets: q.codeSnippets || [],
+        questionSetId: set._id
+      }));
+      await Challenge.insertMany(challengesToInsert);
+    }
 
     // Email notification
     const users = await User.find({ role: 'user' }).select('email');

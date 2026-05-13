@@ -25,7 +25,13 @@ const questionSetSchema = new mongoose.Schema({
     points: Number,
     category: String,
     description: String,
-    hints: [String]
+    hints: [String],
+    tags: [String],
+    codeSnippets: [{
+      lang: String,
+      langSlug: String,
+      code: String
+    }]
   }],
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,

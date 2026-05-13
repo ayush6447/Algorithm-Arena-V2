@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { FiGrid, FiList } from 'react-icons/fi';
 import { api } from '../lib/api';
 import { mockChallenges } from '../lib/mockData';
+import ChallengeCard from '../components/Card';
 import SkeletonCard from '../components/SkeletonCard';
 import EmptyState from '../components/EmptyState';
 import PageHeader from '../components/PageHeader';
@@ -16,6 +17,7 @@ const buildChallengeQuery = ({
   search,
   difficulty,
   category,
+  setId,
   sortBy,
   sortDir,
 }) => {
@@ -27,6 +29,7 @@ const buildChallengeQuery = ({
   if (search) params.set("search", search);
   if (difficulty) params.set("difficulty", difficulty);
   if (category) params.set("category", category);
+  if (setId) params.set("setId", setId);
   return params.toString();
 };
 
@@ -38,8 +41,13 @@ const difficultyChips = [
 ];
 const FALLBACK_CREATED_AT = '2026-01-01T00:00:00.000Z';
 
+const getRGB = (d) =>
+  d === "Easy" ? "34,197,94" : d === "Medium" ? "234,179,8" : d === "Hard" ? "239,68,68" : "99,102,241";
+
 const Missions = () => {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const initialSetId = searchParams.get('setId') || '';
   
   const submissionsQuery = useQuery({
     queryKey: ['my-submissions'],
@@ -68,6 +76,7 @@ const Missions = () => {
     difficulty: "",
     category: "",
     status: "All", // 'All', 'Accepted', 'Pending'
+    setId: initialSetId,
     sortBy: "createdAt",
     sortDir: "desc",
     grouping: "none", // 'none', 'weekly', 'monthly'
@@ -189,7 +198,7 @@ const Missions = () => {
         />
         <input
           className="field-input md:col-span-1"
-          placeholder="Category"
+          placeholder="Category or Tag"
           value={filters.category}
           onChange={(e) => handleFilterChange("category", e.target.value)}
         />
@@ -335,8 +344,8 @@ const Missions = () => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.03 }}
                       >
-                        <Link to={`/challenge/${challenge._id}`} className="group">
-                          <div className="macos-glass p-6 hover:border-accent transition-all duration-300 transform hover:-translate-y-1 h-full">
+                        <Link to={`/challenge/${challenge._id}`} className="group block h-full">
+                          <ChallengeCard className="h-full p-6 flex flex-col gap-2 !rounded-2xl" difficultyColor={getRGB(challenge.difficulty)}>
                             <div className="flex justify-between items-start mb-4">
                               <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
                                 challenge.difficulty === "Easy" ? "bg-green-500/20 text-green-500" :
@@ -355,9 +364,21 @@ const Missions = () => {
                                 <span className="text-secondary text-sm font-bold">{challenge.points} XP</span>
                               </div>
                             </div>
-                            <h3 className="text-xl font-bold group-hover:text-accent transition-colors">{challenge.title}</h3>
-                            <p className="text-secondary text-sm mt-2 line-clamp-2">{challenge.description}</p>
-                          </div>
+                            <div className="flex items-center justify-between gap-2 mt-2">
+                              <h3 className="text-xl font-bold group-hover:text-accent transition-colors line-clamp-2">{challenge.title}</h3>
+                              {new Date() - new Date(challenge.createdAt || Date.now()) < 7 * 24 * 60 * 60 * 1000 && (
+                                <span className="px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest bg-blue-500/20 text-blue-400">New</span>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap gap-2 mt-auto pt-4">
+                              {challenge.tags && challenge.tags.slice(0, 3).map((tag, idx) => (
+                                <span key={idx} className="text-xs font-semibold px-2 py-1 rounded bg-white/5 text-secondary border border-white/5">{tag}</span>
+                              ))}
+                              {(!challenge.tags || challenge.tags.length === 0) && challenge.category && (
+                                <span className="text-xs font-semibold px-2 py-1 rounded bg-white/5 text-secondary border border-white/5">{challenge.category}</span>
+                              )}
+                            </div>
+                          </ChallengeCard>
                         </Link>
                       </MotionBlock>
                     ))}
@@ -371,12 +392,23 @@ const Missions = () => {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.03 }}
                       >
-                        <Link to={`/challenge/${challenge._id}`} className="group">
-                          <div className="macos-glass p-4 sm:p-6 hover:border-accent transition-all flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative overflow-hidden">
-                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-accent/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <div>
-                              <h3 className="text-lg font-bold group-hover:text-accent transition-colors">{challenge.title}</h3>
-                              <p className="text-secondary text-sm mt-1">{challenge.category}</p>
+                        <Link to={`/challenge/${challenge._id}`} className="group block">
+                          <ChallengeCard className="p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 !rounded-2xl" difficultyColor={getRGB(challenge.difficulty)}>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3">
+                                <h3 className="text-lg font-bold group-hover:text-accent transition-colors line-clamp-1">{challenge.title}</h3>
+                                {new Date() - new Date(challenge.createdAt || Date.now()) < 7 * 24 * 60 * 60 * 1000 && (
+                                  <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-blue-500/20 text-blue-400">New</span>
+                                )}
+                              </div>
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                {challenge.tags && challenge.tags.slice(0, 3).map((tag, idx) => (
+                                  <span key={idx} className="text-[10px] font-semibold px-2 py-0.5 rounded bg-white/5 text-secondary border border-white/5">{tag}</span>
+                                ))}
+                                {(!challenge.tags || challenge.tags.length === 0) && challenge.category && (
+                                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-white/5 text-secondary border border-white/5">{challenge.category}</span>
+                                )}
+                              </div>
                             </div>
                             <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
                               {subsMap[challenge._id] === 'Accepted' && (
@@ -393,7 +425,7 @@ const Missions = () => {
                               </span>
                               <span className="text-secondary text-sm min-w-[60px] text-right font-bold">{challenge.points} XP</span>
                             </div>
-                          </div>
+                          </ChallengeCard>
                         </Link>
                       </MotionBlock>
                     ))}
