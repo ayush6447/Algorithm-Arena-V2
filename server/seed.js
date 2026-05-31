@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 const User = require('./src/features/users/User.model');
@@ -93,20 +92,11 @@ async function seedDatabase(isStandalone = false) {
       isNewUser: false
     });
 
-    const nishant = await User.create({
-      username: 'nishant',
-      email: 'nishhu24@gmail.com',
-      password: 'nishhu24',
-      role: 'admin',
-      isNewUser: false
-    });
-
     const clanChief = await User.create({
       username: 'chief1',
       email: 'chief1@iter.ac.in',
       password: 'admin123',
       role: 'clan-chief',
-      isNewUser: false
     });
 
     const standardUser = await User.create({
@@ -114,13 +104,13 @@ async function seedDatabase(isStandalone = false) {
       email: 'operative1@iter.ac.in',
       password: 'admin123',
       role: 'user',
-      isNewUser: false
     });
 
     const clan = await Clan.create({
       name: 'Alpha Coders',
       tag: 'AC',
       description: 'The elite squad of algorithm masters.',
+      createdBy: devmaster._id,
       chief: clanChief._id,
       members: [clanChief._id, standardUser._id]
     });
