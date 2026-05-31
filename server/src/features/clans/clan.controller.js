@@ -288,16 +288,41 @@ const getClanAdminStats = async (req, res, next) => {
 const createClan = async (req, res, next) => {
   try {
     const { name, tag, description } = req.body;
+
+    // First, check if name/tag conflicts with ACTIVE clans only
+    const existingActiveClan = await Clan.findOne({
+      $or: [
+        { name: name.trim(), status: 'active' },
+        { tag: tag.toUpperCase().trim(), status: 'active' }
+      ]
+    });
+
+    if (existingActiveClan) {
+      const conflictField = existingActiveClan.name === name.trim() ? 'name' : 'tag';
+      return res.status(400).json({
+        success: false,
+        message: `Clan with this ${conflictField} already exists (active clan)`,
+        field: conflictField
+      });
+    }
+
     const clan = await Clan.create({
-      name,
-      tag,
+      name: name.trim(),
+      tag: tag.toUpperCase().trim(),
       description,
       createdBy: req.user?._id || req.user?.id || null,
     });
     return sendSuccess(res, { statusCode: 201, data: clan, message: 'Clan created' });
   } catch (err) {
     if (err.code === 11000) {
-      return res.status(400).json({ success: false, message: 'Clan name or tag already exists' });
+      // Extract which field caused the duplicate
+      const field = err.message.includes('name') ? 'name' : 'tag';
+      return res.status(400).json({
+        success: false,
+        message: `Clan with this ${field} already exists`,
+        field: field,
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined
+      });
     }
     return next(err);
   }
@@ -333,7 +358,13 @@ const updateClan = async (req, res, next) => {
     return sendSuccess(res, { data: populated, message: 'Clan updated' });
   } catch (err) {
     if (err.code === 11000) {
-      return res.status(400).json({ success: false, message: 'Clan name or tag already exists in an active clan' });
+      const field = err.message.includes('name') ? 'name' : 'tag';
+      return res.status(400).json({
+        success: false,
+        message: `Clan with this ${field} already exists (active clan)`,
+        field: field,
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined
+      });
     }
     return next(err);
   }
