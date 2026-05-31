@@ -46,6 +46,14 @@ const ChiefMembersTab = ({ clan }) => {
 
   if (!clan) return null;
 
+  if (clan.status === 'archived') {
+    return (
+      <BaseCard className="p-6 border-amber-500/20 bg-amber-500/10 text-amber-200 text-sm font-bold flex items-center gap-2">
+        <FiAlertTriangle /> This clan is archived. Member management is disabled until an admin restores it.
+      </BaseCard>
+    );
+  }
+
   const members = clan.members || [];
 
   const filteredMembers = members.filter(member => {

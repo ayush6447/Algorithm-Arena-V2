@@ -17,6 +17,7 @@ import {
   FiX,
   FiTrash2,
   FiSend,
+  FiAlertTriangle,
 } from 'react-icons/fi';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/Card';
@@ -28,7 +29,7 @@ import MemberHoverCard from '../components/MemberHoverCard';
 import { api } from '../lib/api';
 import { useAuth } from '../context/useAuth';
 
-const InternalClanChat = ({ clanId }) => {
+const InternalClanChat = ({ clanId, isArchived }) => {
   const { user } = useAuth();
   const [message, setMessage] = useState('');
   
@@ -37,16 +38,17 @@ const InternalClanChat = ({ clanId }) => {
   const { data: messages = [], isLoading } = useQuery({
     queryKey: ['chat', clanId],
     queryFn: async () => {
-      if (!clanId) return [];
+      if (!clanId || isArchived) return [];
       const res = await api.get(`/api/chat/${clanId}`);
       return res.data.data;
     },
-    enabled: !!clanId,
+    enabled: !!clanId && !isArchived,
     refetchInterval: 5000
   });
 
   const handleSend = async (e) => {
     e.preventDefault();
+    if (isArchived) return;
     if (!message.trim()) return;
     const text = message;
     setMessage('');
@@ -61,8 +63,15 @@ const InternalClanChat = ({ clanId }) => {
 
   return (
     <div className="h-full flex flex-col relative">
+      {isArchived && (
+        <div className="mb-3 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-200">
+          Chat is disabled while this clan is archived.
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar max-h-[400px]">
-        {isLoading ? (
+        {isArchived ? (
+          <p className="text-secondary text-sm text-center">Archived clan chat is read only.</p>
+        ) : isLoading ? (
           <p className="text-secondary text-sm text-center">Establishing secure connection...</p>
         ) : messages.length === 0 ? (
           <p className="text-secondary text-sm text-center">No transmissions yet. Be the first.</p>
@@ -94,12 +103,13 @@ const InternalClanChat = ({ clanId }) => {
             type="text"
             value={message}
             onChange={e => setMessage(e.target.value)}
+            disabled={isArchived}
             placeholder="Transmit message..."
             className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-3 pr-10 text-sm text-primary placeholder-tertiary focus:outline-none focus:border-accent/50 transition-colors"
           />
           <button 
             type="submit"
-            disabled={!message.trim()}
+            disabled={isArchived || !message.trim()}
             className="absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-lg bg-accent/20 text-accent hover:bg-accent hover:text-white disabled:opacity-50 disabled:hover:bg-accent/20 disabled:hover:text-accent transition-colors"
           >
             <FiSend className="text-sm" />
@@ -134,6 +144,7 @@ const ClanDashboard = ({ clan, userId, onLeave, globalNotice }) => {
   const requests = clan.requests || [];
   const notices = clan.notices || ['No announcements yet. Stay tuned!'];
   const [activeTab, setActiveTab] = useState('roster'); // roster, notices, chat
+  const isArchived = clan.status === 'archived';
 
   return (
     <div className="space-y-6">
@@ -152,15 +163,24 @@ const ClanDashboard = ({ clan, userId, onLeave, globalNotice }) => {
               <h2 className="text-3xl md:text-5xl font-black text-primary leading-tight">
                 {clan.name}
                 <span className="ml-3 text-lg font-mono text-accent/70">[{clan.tag}]</span>
+                <span className={`ml-3 inline-flex items-center rounded-full px-3 py-1 text-xs font-black uppercase tracking-widest ${isArchived ? 'bg-amber-500/15 text-amber-300' : 'bg-emerald-500/15 text-emerald-300'}`}>
+                  {isArchived ? 'Archived' : 'Active'}
+                </span>
               </h2>
               <p className="text-secondary mt-2 max-w-lg text-sm md:text-base">{clan.description}</p>
+              {isArchived && (
+                <p className="mt-3 inline-flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-200">
+                  <FiAlertTriangle size={14} /> This clan is archived and read only until an admin restores it.
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={onLeave}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all text-sm font-semibold"
+                disabled={isArchived}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all text-sm font-semibold disabled:opacity-50 disabled:hover:bg-transparent"
               >
-                <FiLogOut size={14} /> Leave Clan
+                <FiLogOut size={14} /> {isArchived ? 'Archived' : 'Leave Clan'}
               </button>
             </div>
           </div>
@@ -317,7 +337,7 @@ const ClanDashboard = ({ clan, userId, onLeave, globalNotice }) => {
                 <FiMessageSquare className="text-accent" />
                 Uplink
               </h3>
-              <InternalClanChat clanId={clan._id} />
+              <InternalClanChat clanId={clan._id} isArchived={isArchived} />
             </BaseCard>
           </div>
         )}
@@ -442,6 +462,22 @@ const Clans = () => {
   const [removeTarget, setRemoveTarget] = useState(null);
   const [leaving, setLeaving] = useState(false);
 
+  const myClanQuery = useQuery({
+    queryKey: ['my-clan'],
+    queryFn: async () => {
+      try {
+        const res = await api.get('/api/clans/mine');
+        return res.data.data || null;
+      } catch (err) {
+        if (err.response?.status === 404) {
+          return null;
+        }
+        throw err;
+      }
+    },
+    enabled: !!user?.id,
+  });
+
   // Fetch all clans
   const clansQuery = useQuery({
     queryKey: ['clans-list'],
@@ -451,10 +487,7 @@ const Clans = () => {
     },
   });
 
-  // Find user's clan
-  const myClan = (clansQuery.data || []).find((c) =>
-    (c.members || []).some((m) => (m._id || m) === user?.id),
-  );
+  const myClan = myClanQuery.data;
 
   // Fetch global notice
   const globalNoticeQuery = useQuery({
@@ -481,6 +514,10 @@ const Clans = () => {
 
   const handleLeave = async () => {
     if (!myClan) return;
+    if (myClan.status === 'archived') {
+      toast.error('Archived clans cannot be left until they are restored.');
+      return;
+    }
     setLeaving(true);
     try {
       await api.post(`/api/clans/${myClan._id}/leave`);
@@ -488,6 +525,7 @@ const Clans = () => {
       setShowLeaveConfirm(false);
       updateUser({ clan: null });
       queryClient.invalidateQueries({ queryKey: ['clans-list'] });
+      queryClient.invalidateQueries({ queryKey: ['my-clan'] });
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to leave. Try again.');
     } finally {
@@ -559,7 +597,7 @@ const Clans = () => {
     <div className="space-y-6 pb-20">
       <PageHeader
         title="Clans"
-        subtitle={myClan ? `You are a member of ${myClan.name}` : 'Find your tribe and compete together.'}
+        subtitle={myClan ? (myClan.status === 'archived' ? `Your clan ${myClan.name} is archived and read only.` : `You are a member of ${myClan.name}`) : 'Find your tribe and compete together.'}
         showBack={true}
         backUrl="/dashboard"
       />

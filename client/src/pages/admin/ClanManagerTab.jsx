@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiUsers, FiUserPlus, FiPercent, FiX, FiShield, FiArrowLeft, FiTrash2, FiAward, FiPlus, FiUserMinus } from 'react-icons/fi';
+import { FiUsers, FiUserPlus, FiPercent, FiX, FiShield, FiArrowLeft, FiTrash2, FiAward, FiPlus, FiUserMinus, FiAlertTriangle, FiRefreshCw } from 'react-icons/fi';
 import BaseCard from '../../components/BaseCard';
 import MemberHoverCard from '../../components/MemberHoverCard';
 import { api } from '../../lib/api';
@@ -17,7 +17,7 @@ const ClanManagerTab = () => {
   const clansQuery = useQuery({
     queryKey: ['admin-clans'],
     queryFn: async () => {
-      const res = await api.get('/api/clans/leaderboard');
+      const res = await api.get('/api/clans/leaderboard?status=all');
       return res.data.data || [];
     }
   });
@@ -52,6 +52,52 @@ const ClanManagerTab = () => {
     },
     onError: (err) => {
       toast.error(err.response?.data?.message || 'Failed to create clan');
+    }
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: async (clanId) => {
+      const res = await api.patch(`/api/clans/${clanId}/archive`);
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success('Clan archived');
+      queryClient.invalidateQueries(['admin-clans']);
+      if (viewClanId) queryClient.invalidateQueries(['admin-clan-detail', viewClanId]);
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || 'Failed to archive clan');
+    }
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: async (clanId) => {
+      const res = await api.patch(`/api/clans/${clanId}/restore`);
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success('Clan restored');
+      queryClient.invalidateQueries(['admin-clans']);
+      if (viewClanId) queryClient.invalidateQueries(['admin-clan-detail', viewClanId]);
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || 'Failed to restore clan');
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (clanId) => {
+      const res = await api.delete(`/api/clans/${clanId}`);
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success('Clan permanently deleted');
+      queryClient.invalidateQueries(['admin-clans']);
+      queryClient.invalidateQueries(['admin-unassigned-users']);
+      setViewClanId(null);
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || 'Failed to delete clan');
     }
   });
 
@@ -127,6 +173,7 @@ const ClanManagerTab = () => {
 
   if (viewClanId) {
     const clan = clanDetailQuery.data;
+    const isArchived = clan?.status === 'archived';
     return (
       <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
         <button onClick={() => setViewClanId(null)} className="flex items-center gap-2 text-tertiary hover:text-primary transition-colors text-sm font-bold bg-white/5 px-4 py-2 rounded-xl w-fit">
@@ -144,8 +191,16 @@ const ClanManagerTab = () => {
                   <h2 className="text-3xl font-black text-primary flex items-center gap-3">
                     {clan.name}
                     <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-tertiary font-mono tracking-widest uppercase">{clan.tag}</span>
+                    <span className={`px-3 py-1 rounded-full text-xs font-black tracking-widest uppercase ${isArchived ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'}`}>
+                      {isArchived ? 'Archived' : 'Active'}
+                    </span>
                   </h2>
                   <p className="text-secondary mt-2">{clan.description}</p>
+                  {isArchived && (
+                    <p className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-amber-300 bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-xl">
+                      <FiAlertTriangle /> Read-only archive. Restore this clan before making further changes.
+                    </p>
+                  )}
                   <div className="text-sm text-tertiary mt-2 flex items-center gap-2">
                     <FiShield className="text-accent" /> Chief: 
                     {clan.chief ? (
@@ -175,6 +230,46 @@ const ClanManagerTab = () => {
                     <p className="text-[10px] text-tertiary uppercase font-bold tracking-widest">Total Points</p>
                   </div>
                 </div>
+              </div>
+              <div className="relative z-10 mt-6 flex flex-wrap gap-3">
+                {!isArchived ? (
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Archive ${clan.name}? Members will keep their assignment until an admin restores or deletes the clan.`)) {
+                        archiveMutation.mutate(clan._id);
+                      }
+                    }}
+                    disabled={archiveMutation.isLoading}
+                    className="inline-flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm font-bold text-amber-300 hover:bg-amber-500/20 transition-colors disabled:opacity-60"
+                  >
+                    <FiAlertTriangle /> {archiveMutation.isLoading ? 'Archiving...' : 'Archive Clan'}
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Restore ${clan.name}?`)) {
+                          restoreMutation.mutate(clan._id);
+                        }
+                      }}
+                      disabled={restoreMutation.isLoading}
+                      className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-bold text-emerald-300 hover:bg-emerald-500/20 transition-colors disabled:opacity-60"
+                    >
+                      <FiRefreshCw /> {restoreMutation.isLoading ? 'Restoring...' : 'Restore Clan'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Permanently delete ${clan.name}? This will remove the clan, members' clan links, and chat history.`)) {
+                          deleteMutation.mutate(clan._id);
+                        }
+                      }}
+                      disabled={deleteMutation.isLoading}
+                      className="inline-flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-300 hover:bg-red-500/20 transition-colors disabled:opacity-60"
+                    >
+                      <FiTrash2 /> {deleteMutation.isLoading ? 'Deleting...' : 'Delete Permanently'}
+                    </button>
+                  </>
+                )}
               </div>
             </BaseCard>
 
@@ -218,42 +313,48 @@ const ClanManagerTab = () => {
                         <td className="p-4 text-sm font-bold text-purple-400">{member.points || 0}</td>
                         <td className="p-4 text-sm font-bold text-green-400">{member.solvedCount || 0}</td>
                         <td className="p-4 flex items-center justify-end gap-2">
-                          {clan.chief?._id !== member._id ? (
-                            <button 
-                              onClick={() => {
-                                if (window.confirm(`Make ${member.username} the Clan Chief?`)) {
-                                  assignChiefMutation.mutate({ clanId: clan._id, userId: member._id });
-                                }
-                              }}
-                              className="p-2 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
-                              title="Make Clan Chief"
-                            >
-                              <FiShield size={14} />
-                            </button>
+                          {isArchived ? (
+                            <span className="text-xs font-bold text-tertiary uppercase tracking-widest">Read only</span>
                           ) : (
-                            <button 
-                              onClick={() => {
-                                if (window.confirm(`Demote ${member.username} to regular member?`)) {
-                                  updateRoleMutation.mutate({ userId: member._id, role: 'member' });
-                                }
-                              }}
-                              className="p-2 rounded-lg bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 transition-colors"
-                              title="Demote to Member"
-                            >
-                              <FiUserMinus size={14} />
-                            </button>
+                            <>
+                              {clan.chief?._id !== member._id ? (
+                                <button 
+                                  onClick={() => {
+                                    if (window.confirm(`Make ${member.username} the Clan Chief?`)) {
+                                      assignChiefMutation.mutate({ clanId: clan._id, userId: member._id });
+                                    }
+                                  }}
+                                  className="p-2 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
+                                  title="Make Clan Chief"
+                                >
+                                  <FiShield size={14} />
+                                </button>
+                              ) : (
+                                <button 
+                                  onClick={() => {
+                                    if (window.confirm(`Demote ${member.username} to regular member?`)) {
+                                      updateRoleMutation.mutate({ userId: member._id, role: 'member' });
+                                    }
+                                  }}
+                                  className="p-2 rounded-lg bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 transition-colors"
+                                  title="Demote to Member"
+                                >
+                                  <FiUserMinus size={14} />
+                                </button>
+                              )}
+                              <button 
+                                onClick={() => {
+                                  if (window.confirm(`Remove ${member.username} from clan?`)) {
+                                    removeMemberMutation.mutate({ clanId: clan._id, userId: member._id });
+                                  }
+                                }} 
+                                className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                                title="Remove Member"
+                              >
+                                <FiTrash2 size={14} />
+                              </button>
+                            </>
                           )}
-                          <button 
-                            onClick={() => {
-                              if (window.confirm(`Remove ${member.username} from clan?`)) {
-                                removeMemberMutation.mutate({ clanId: clan._id, userId: member._id });
-                              }
-                            }} 
-                            className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
-                            title="Remove Member"
-                          >
-                            <FiTrash2 size={14} />
-                          </button>
                         </td>
                       </tr>
                     ))}
@@ -285,13 +386,18 @@ const ClanManagerTab = () => {
         {clansQuery.data?.map((clan, i) => (
           <motion.div key={clan._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
             <BaseCard 
-              className="p-5 flex flex-col gap-4 relative overflow-hidden group cursor-pointer hover:border-accent/50 transition-colors"
+              className={`p-5 flex flex-col gap-4 relative overflow-hidden group cursor-pointer hover:border-accent/50 transition-colors ${clan.status === 'archived' ? 'opacity-70 border-amber-500/20' : ''}`}
               onClick={() => setViewClanId(clan._id)}
             >
               <div className="absolute -right-8 -top-8 w-24 h-24 bg-accent/10 rounded-full blur-2xl group-hover:bg-accent/20 transition-colors" />
               
               <div>
                 <h3 className="font-bold text-xl text-primary group-hover:text-accent transition-colors">{clan.name}</h3>
+                <div className="mt-2 flex items-center gap-2 text-[10px] uppercase tracking-widest font-black">
+                  <span className={`px-2 py-1 rounded-full ${clan.status === 'archived' ? 'bg-amber-500/15 text-amber-300' : 'bg-emerald-500/15 text-emerald-300'}`}>
+                    {clan.status === 'archived' ? 'Archived' : 'Active'}
+                  </span>
+                </div>
                 <div className="text-xs text-tertiary uppercase tracking-widest mt-1 flex items-center gap-1">
                    Chief: 
                    <span className="text-secondary font-bold">

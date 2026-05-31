@@ -9,6 +9,8 @@ const {
   getClanLeaderboard,
   createClan,
   updateClan,
+  archiveClan,
+  restoreClan,
   deleteClan,
   joinClan,
   leaveClan,
@@ -51,6 +53,8 @@ router.delete('/:id/notices/:index', protect, validate(clanNoticeIndexParamsSche
 router.get('/:id/admin-stats', protect, admin, validate(clanIdParamsSchema), getClanAdminStats);
 router.post('/', protect, admin, validate(clanCreateSchema), createClan);
 router.put('/:id', protect, admin, validate(clanIdParamsSchema), validate(clanUpdateSchema), updateClan);
+router.patch('/:id/archive', protect, validate(clanIdParamsSchema), archiveClan);
+router.patch('/:id/restore', protect, admin, validate(clanIdParamsSchema), restoreClan);
 router.delete('/:id', protect, admin, validate(clanIdParamsSchema), deleteClan);
 router.put('/:id/chief', protect, admin, validate(clanIdParamsSchema), validate(clanAssignChiefSchema), assignChief);
 router.post('/:id/members', protect, admin, validate(clanIdParamsSchema), validate(clanAddMemberSchema), addMember);

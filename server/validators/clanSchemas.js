@@ -36,7 +36,6 @@ const clanUpdateSchema = {
       name: z.string().trim().min(2).max(32).optional(),
       tag: z.string().trim().min(2).max(5).optional(),
       description: z.string().trim().max(256).optional(),
-      status: z.enum(['active', 'archived']).optional(),
     })
     .refine((body) => Object.keys(body).length > 0, 'At least one field is required'),
 };
@@ -61,6 +60,7 @@ const clanNoticeCreateSchema = {
 
 const clanLeaderboardQuerySchema = {
   query: z.object({
+    status: z.enum(['active', 'archived', 'all']).default('active'),
     window: z.enum(['all', '7d', '30d']).default('all'),
   }),
 };

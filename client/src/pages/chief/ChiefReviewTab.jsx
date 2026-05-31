@@ -38,6 +38,14 @@ const ChiefReviewTab = ({ clan }) => {
 
   if (!clan) return null;
 
+  if (clan.status === 'archived') {
+    return (
+      <BaseCard className="p-6 border-amber-500/20 bg-amber-500/10 text-amber-200 text-sm font-bold flex items-center gap-2">
+        <FiCode className="text-amber-300" /> This clan is archived. Submission review is disabled until an admin restores it.
+      </BaseCard>
+    );
+  }
+
   const filteredSubs = submissionsQuery.data || [];
   const pendingCount = filteredSubs.filter(s => s.status === 'Pending').length;
 

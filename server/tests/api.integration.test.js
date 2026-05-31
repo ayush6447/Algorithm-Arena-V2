@@ -10,6 +10,7 @@ let User;
 let Clan;
 let Submission;
 let RefreshToken;
+let ChatMessage;
 
 const clearDatabase = async () => {
   const collections = mongoose.connection.collections;
@@ -29,6 +30,7 @@ test.before(async () => {
   Clan = require('../src/features/clans/Clan.model.js');
   Submission = require('../src/features/submissions/Submission.model.js');
   RefreshToken = require('../src/features/auth/RefreshToken.model.js');
+  ChatMessage = require('../src/features/chat/ChatMessage.model.js');
 
   await mongoose.connect(process.env.MONGO_URI);
 });
@@ -472,4 +474,136 @@ test('role-only clan-chief without clan mapping cannot access clan-chief scoped 
     .set('Authorization', `Bearer ${ghostChief.token}`)
     .send({ message: 'No clan mapping should fail' });
   assert.equal(warnAttempt.status, 403);
+});
+
+test('clans archive first, restore cleanly, and only admin can permanently delete archived clans', async () => {
+  const admin = await registerUser({
+    username: 'clan_admin_lifecycle',
+    email: 'clan.admin.lifecycle@example.com',
+  });
+  await User.findByIdAndUpdate(admin.id, { role: 'admin' });
+
+  const adminLogin = await request(app).post('/api/auth/login').send({
+    email: 'clan.admin.lifecycle@example.com',
+    password: 'strong-password',
+  });
+  const adminToken = adminLogin.body.data.token;
+
+  const clanRes = await request(app)
+    .post('/api/clans')
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({ name: 'Lifecycle Clan', tag: 'LIFE', description: 'Lifecycle test clan' });
+  assert.equal(clanRes.status, 201);
+  const clanId = clanRes.body.data._id;
+
+  const chief = await registerUser({
+    username: 'clan_chief_lifecycle',
+    email: 'clan.chief.lifecycle@example.com',
+  });
+  const member = await registerUser({
+    username: 'clan_member_lifecycle',
+    email: 'clan.member.lifecycle@example.com',
+  });
+
+  assert.equal(
+    (await request(app)
+      .post(`/api/clans/${clanId}/members`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ userId: chief.id })).status,
+    200
+  );
+  assert.equal(
+    (await request(app)
+      .post(`/api/clans/${clanId}/members`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ userId: member.id })).status,
+    200
+  );
+  assert.equal(
+    (await request(app)
+      .put(`/api/clans/${clanId}/chief`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ userId: chief.id })).status,
+    200
+  );
+
+  const memberLogin = await request(app).post('/api/auth/login').send({
+    email: 'clan.member.lifecycle@example.com',
+    password: 'strong-password',
+  });
+  const memberToken = memberLogin.body.data.token;
+
+  const chatRes = await request(app)
+    .post(`/api/chat/${clanId}`)
+    .set('Authorization', `Bearer ${memberToken}`)
+    .send({ content: 'First message before archive' });
+  assert.equal(chatRes.status, 201);
+
+  const chiefLogin = await request(app).post('/api/auth/login').send({
+    email: 'clan.chief.lifecycle@example.com',
+    password: 'strong-password',
+  });
+  const chiefToken = chiefLogin.body.data.token;
+
+  const deleteWhileActive = await request(app)
+    .delete(`/api/clans/${clanId}`)
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({});
+  assert.equal(deleteWhileActive.status, 400);
+
+  const archiveRes = await request(app)
+    .patch(`/api/clans/${clanId}/archive`)
+    .set('Authorization', `Bearer ${chiefToken}`)
+    .send({});
+  assert.equal(archiveRes.status, 200);
+  assert.equal(archiveRes.body.data.status, 'archived');
+
+  const activeClansAfterArchive = await request(app)
+    .get('/api/clans')
+    .set('Authorization', `Bearer ${adminToken}`);
+  assert.equal(activeClansAfterArchive.status, 200);
+  assert.equal((activeClansAfterArchive.body.data || []).some((clan) => clan._id === clanId), false);
+
+  const allLeaderboardAfterArchive = await request(app)
+    .get('/api/clans/leaderboard?status=all')
+    .set('Authorization', `Bearer ${adminToken}`);
+  assert.equal(allLeaderboardAfterArchive.status, 200);
+  assert.equal((allLeaderboardAfterArchive.body.data || []).some((clan) => clan._id === clanId && clan.status === 'archived'), true);
+
+  const archivedChatAttempt = await request(app)
+    .post(`/api/chat/${clanId}`)
+    .set('Authorization', `Bearer ${memberToken}`)
+    .send({ content: 'Should be blocked' });
+  assert.equal(archivedChatAttempt.status, 403);
+
+  const restoreRes = await request(app)
+    .patch(`/api/clans/${clanId}/restore`)
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({});
+  assert.equal(restoreRes.status, 200);
+  assert.equal(restoreRes.body.data.status, 'active');
+
+  const archiveAgainRes = await request(app)
+    .patch(`/api/clans/${clanId}/archive`)
+    .set('Authorization', `Bearer ${chiefToken}`)
+    .send({});
+  assert.equal(archiveAgainRes.status, 200);
+
+  const deleteRes = await request(app)
+    .delete(`/api/clans/${clanId}`)
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({});
+  assert.equal(deleteRes.status, 200);
+
+  const deletedClan = await Clan.findById(clanId);
+  assert.equal(deletedClan, null);
+
+  const archivedMessageCount = await ChatMessage.countDocuments({ clanId });
+  assert.equal(archivedMessageCount, 0);
+
+  const updatedChief = await User.findById(chief.id);
+  const updatedMember = await User.findById(member.id);
+  assert.equal(updatedChief.clan, null);
+  assert.equal(updatedChief.role, 'user');
+  assert.equal(updatedMember.clan, null);
 });

@@ -12,8 +12,8 @@ const requireClanMembership = async (req, res, clanId) => {
     _id: clanId,
     $or: [{ members: userId }, { chief: userId }],
   });
-  if (!clan) {
-    res.status(403).json({ success: false, message: 'You are not a member of this clan' });
+  if (!clan || clan.status === 'archived') {
+    res.status(403).json({ success: false, message: 'This clan is archived and chat is disabled' });
     return null;
   }
   return clan;

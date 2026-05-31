@@ -37,6 +37,14 @@ const ChiefNoticeTab = ({ clan }) => {
 
   if (!clan) return null;
 
+  if (clan.status === 'archived') {
+    return (
+      <BaseCard className="p-6 border-amber-500/20 bg-amber-500/10 text-amber-200 text-sm font-bold flex items-center gap-2">
+        <FiMessageSquare /> This clan is archived. Notice posting is disabled until an admin restores it.
+      </BaseCard>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">

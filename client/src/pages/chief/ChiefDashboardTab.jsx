@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiUsers, FiActivity, FiCheck, FiX, FiAward, FiAlertTriangle, FiFileText, FiMessageSquare, FiShield } from 'react-icons/fi';
+import { FiUsers, FiActivity, FiCheck, FiX, FiAward, FiAlertTriangle, FiFileText, FiMessageSquare, FiShield, FiRefreshCw } from 'react-icons/fi';
 import BaseCard from '../../components/BaseCard';
 import { api } from '../../lib/api';
 
@@ -24,6 +24,7 @@ const StatCard = ({ title, value, icon: Icon, colorClass, subtitle }) => (
 const ChiefDashboardTab = ({ clan }) => {
   const queryClient = useQueryClient();
   const [warningModal, setWarningModal] = useState({ open: false, user: null, message: '' });
+  const isArchived = clan?.status === 'archived';
 
   const approveMutation = useMutation({
     mutationFn: async (userId) => {
@@ -59,6 +60,20 @@ const ChiefDashboardTab = ({ clan }) => {
     }
   });
 
+  const archiveMutation = useMutation({
+    mutationFn: async () => {
+      const res = await api.patch(`/api/clans/${clan._id}/archive`);
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success('Clan archived');
+      queryClient.invalidateQueries(['chief-clan-info']);
+    },
+    onError: (err) => {
+      toast.error(err?.response?.data?.message || 'Failed to archive clan');
+    }
+  });
+
   if (!clan) return (
     <div className="flex items-center justify-center py-20">
       <div className="w-8 h-8 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
@@ -82,6 +97,11 @@ const ChiefDashboardTab = ({ clan }) => {
 
   return (
     <div className="space-y-6">
+      {isArchived && (
+        <BaseCard className="p-4 border-amber-500/20 bg-amber-500/10 text-amber-200 text-sm font-bold flex items-center gap-2">
+          <FiAlertTriangle /> This clan is archived. Chief actions are paused until an admin restores it.
+        </BaseCard>
+      )}
       
       {/* 4 Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -154,8 +174,18 @@ const ChiefDashboardTab = ({ clan }) => {
               <button className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/10 hover:border-yellow-500/30 transition-all text-xs font-bold text-primary">
                 <FiAward size={18} className="text-yellow-400" /> Leaderboard
               </button>
-              <button className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/10 hover:border-red-500/30 transition-all text-xs font-bold text-primary">
-                <FiAlertTriangle size={18} className="text-red-400" /> Mass Warn
+              <button
+                onClick={() => {
+                  if (isArchived) return;
+                  if (window.confirm(`Archive ${clan.name}? This will make the clan read-only until an admin restores it.`)) {
+                    archiveMutation.mutate();
+                  }
+                }}
+                disabled={isArchived || archiveMutation.isPending}
+                className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/10 hover:border-red-500/30 transition-all text-xs font-bold text-primary disabled:opacity-60"
+              >
+                {isArchived ? <FiRefreshCw size={18} className="text-amber-400" /> : <FiAlertTriangle size={18} className="text-red-400" />}
+                {isArchived ? 'Archived' : archiveMutation.isPending ? 'Archiving...' : 'Archive Clan'}
               </button>
             </div>
           </BaseCard>
