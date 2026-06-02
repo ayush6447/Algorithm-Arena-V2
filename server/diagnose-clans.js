@@ -1,6 +1,15 @@
 const mongoose = require('mongoose');
+const path = require('path');
 
-const MONGO_URI = '<redacted-mongo-uri>';
+// Load environment variables
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+
+const MONGO_URI = process.env.MONGO_URI;
+
+if (!MONGO_URI) {
+  console.error('❌ ERROR: MONGO_URI not found in .env');
+  process.exit(1);
+}
 
 async function diagnose() {
   try {
