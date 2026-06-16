@@ -8,7 +8,7 @@ import ConfirmDialog from "../../components/ConfirmDialog";
 import SkeletonCard from "../../components/SkeletonCard";
 import EmptyState from "../../components/EmptyState";
 import { api } from "../../lib/api";
-import { USE_MOCK, mockChallenges, filterSubmissions } from "../../lib/mockData";
+import { USE_MOCK, filterSubmissions } from "../../lib/mockData";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -163,9 +163,9 @@ const ChallengesTab = () => {
           "/api/challenges?page=1&limit=100&sortBy=createdAt&sortDir=desc",
         );
         const data = res.data.data || [];
-        return data.length > 0 ? data : mockChallenges;
+        return data;
       } catch {
-        return mockChallenges;
+        return [];
       }
     },
   });
@@ -187,9 +187,9 @@ const ChallengesTab = () => {
         if (challengeFilters.to) params.set("to", challengeFilters.to);
         const res = await api.get(`/api/challenges?${params.toString()}`);
         const data = res.data.data || [];
-        return data.length > 0 ? data : mockChallenges;
+        return data;
       } catch {
-        return mockChallenges;
+        return [];
       }
     },
   });

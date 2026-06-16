@@ -7,7 +7,7 @@ import MemberHoverCard from '../../components/MemberHoverCard';
 import { api } from '../../lib/api';
 import toast from 'react-hot-toast';
 
-import { USE_MOCK, mockLeaderboardMembers } from '../../lib/mockData';
+import { USE_MOCK } from '../../lib/mockData';
 
 const MembersTab = () => {
   const queryClient = useQueryClient();
@@ -20,12 +20,12 @@ const MembersTab = () => {
     queryKey: ['admin-all-users'],
     queryFn: async () => {
       try {
-        if (USE_MOCK) return mockLeaderboardMembers;
+        if (USE_MOCK) return [];
         const res = await api.get('/api/users');
         return res.data.data || [];
       } catch (err) {
-        console.warn("Failed to fetch users, using mock data.", err);
-        return mockLeaderboardMembers;
+        console.warn("Failed to fetch users.", err);
+        return [];
       }
     }
   });

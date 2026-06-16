@@ -1,5 +1,5 @@
+# Algorithm Arena V2
 
-<<<<<<< HEAD
 MERN Stack for Algorithm-Arena
 
 # PROJECT_OVERVIEW.md
@@ -216,3 +216,12 @@ The following items were mentioned in product context but are **not implemented 
 - Fixed client build and ESLint warnings in `button.jsx` (Fast Refresh component-only exports) and `QuestionSetsTab.jsx` (empty catch statement).
 - Resolved profile card updating failures by correcting backend validator `updateMeSchema` (added string support for study years, allowed username-only social handles instead of raw URLs, and increased profile picture limit to 4MB to support base64 image data URIs).
 - Synced client-side `formData` in `Settings.jsx` to upload changed avatars/presets to the backend on clicking "Save Changes".
+
+### 6. WebSocket Connection URL Fix
+- Updated the client-side socket initialization in `useSocket.js` to check `VITE_API_BASE_URL` if `VITE_API_URL` is not provided.
+- This ensures that when built and hosted on a static provider (like Vercel at `www.algorithm-arena.one`), the socket connection correctly targets the Render backend host (`algorithm-arena-v2.onrender.com`) instead of attempting to connect to the frontend domain itself.
+
+### 7. Mock Data Fallbacks Removed
+- Removed fallback logic that injected mock challenges and mock members when backend requests returned empty results or failed.
+- The website now cleanly renders standard empty state pages instead of displaying local mock data.
+- Cleared all unused mock imports to maintain a 100% clean linter and production build.

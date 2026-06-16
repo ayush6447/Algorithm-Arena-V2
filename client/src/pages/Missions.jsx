@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { FiGrid, FiList, FiX, FiTarget, FiClock } from 'react-icons/fi';
 import { api } from '../lib/api';
-import { mockChallenges } from '../lib/mockData';
 import ChallengeCard from '../components/Card';
 import SkeletonCard from '../components/SkeletonCard';
 import EmptyState from '../components/EmptyState';
@@ -117,70 +116,19 @@ const Missions = () => {
   const challengesQuery = useQuery({
     queryKey,
     queryFn: async () => {
-      const getFilteredMockData = () => {
-        let filtered = mockChallenges;
-        if (filters.search) {
-          const searchLower = filters.search.toLowerCase();
-          filtered = filtered.filter(c =>
-            c.title.toLowerCase().includes(searchLower) ||
-            c.description.toLowerCase().includes(searchLower) ||
-            (c.category && c.category.toLowerCase().includes(searchLower)) ||
-            (Array.isArray(c.tags) && c.tags.some(t => t.toLowerCase().includes(searchLower)))
-          );
-        }
-        if (filters.difficulty) {
-          filtered = filtered.filter(c => c.difficulty === filters.difficulty);
-        }
-        if (filters.category) {
-          const categoryLower = filters.category.toLowerCase();
-          filtered = filtered.filter(c => c.category && c.category.toLowerCase().includes(categoryLower));
-        }
-        if (filters.status !== "All") {
-          filtered = filtered.filter(c => {
-            const st = subsMap[c._id];
-            return st === filters.status;
-          });
-        }
-        return filtered;
-      };
-
       try {
         const qs = buildChallengeQuery(filters);
         const res = await api.get(`/api/challenges?${qs}`);
         const data = res.data.data || [];
 
-        if (data.length > 0) {
-          return {
-            data,
-            meta: res.data.meta || { page: 1, totalPages: 1, total: data.length },
-          };
-        }
-
-        // When filtering by a specific question set, don't fall back to mock data
-        if (filters.setId) {
-          return {
-            data: [],
-            meta: { page: 1, totalPages: 1, total: 0 },
-          };
-        }
-
-        const filteredMock = getFilteredMockData();
         return {
-          data: filteredMock,
-          meta: { page: 1, totalPages: Math.ceil(filteredMock.length / filters.limit) || 1, total: filteredMock.length },
+          data,
+          meta: res.data.meta || { page: 1, totalPages: 1, total: data.length },
         };
       } catch {
-        // When filtering by a specific question set, don't fall back to mock data
-        if (filters.setId) {
-          return {
-            data: [],
-            meta: { page: 1, totalPages: 1, total: 0 },
-          };
-        }
-        const filteredMock = getFilteredMockData();
         return {
-          data: filteredMock,
-          meta: { page: 1, totalPages: Math.ceil(filteredMock.length / filters.limit) || 1, total: filteredMock.length },
+          data: [],
+          meta: { page: 1, totalPages: 1, total: 0 },
         };
       }
     },
@@ -212,7 +160,7 @@ const Missions = () => {
       return [];
     }
 
-    return apiData.length > 0 ? apiData : mockChallenges;
+    return apiData;
   }, [challengesQuery.data, filters.setId, activeSet]);
 
   const meta = challengesQuery.data?.meta || { page: 1, totalPages: 1, total: challenges.length };
