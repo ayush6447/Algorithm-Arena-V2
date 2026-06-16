@@ -21,7 +21,6 @@ const dashboardRoutes = require('./src/features/dashboard/dashboard.routes');
 const profileRoutes = require('./src/features/profile/profile.routes');
 const clanRoutes = require('./src/features/clans/clan.routes');
 const userRoutes = require('./src/features/users/user.routes');
-const noticeRoutes = require('./src/features/notices/notice.routes');
 const resourceRoutes = require('./src/features/resources/resource.routes');
 const badgeRoutes = require('./src/features/badges/badge.routes');
 
@@ -110,7 +109,6 @@ const createApp = () => {
   app.use('/api/profile', profileRoutes);
   app.use('/api/clans', clanRoutes);
   app.use('/api/users', userRoutes);
-  app.use('/api/notices', noticeRoutes);
   app.use('/api/resources', resourceRoutes);
   app.use('/api/badges', badgeRoutes);
 

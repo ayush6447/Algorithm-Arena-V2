@@ -11,15 +11,6 @@ const globalNoticeSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
-  priority: {
-    type: String,
-    enum: ['Urgent', 'Info', 'General'],
-    default: 'General'
-  },
-  isPinned: {
-    type: Boolean,
-    default: false
-  },
   createdAt: {
     type: Date,
     default: Date.now,

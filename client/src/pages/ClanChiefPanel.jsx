@@ -10,7 +10,6 @@ import PermissionLegend from '../components/PermissionLegend';
 import ChiefDashboardTab from './chief/ChiefDashboardTab';
 import ChiefMembersTab from './chief/ChiefMembersTab';
 import ChiefReviewTab from './chief/ChiefReviewTab';
-import ChiefNoticeTab from './chief/ChiefNoticeTab';
 
 const ClanChiefPanel = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -19,7 +18,6 @@ const ClanChiefPanel = () => {
     { id: 'dashboard', label: 'Clan Overview', icon: FiActivity },
     { id: 'members', label: 'Member Roster', icon: FiUsers },
     { id: 'review', label: 'Review Submissions', icon: FiFileText },
-    { id: 'notices', label: 'Clan Notices', icon: FiBell },
   ];
 
   const chiefQuery = useQuery({
@@ -116,7 +114,6 @@ const ClanChiefPanel = () => {
               {activeTab === 'dashboard' && <ChiefDashboardTab clan={chiefQuery.data} />}
               {activeTab === 'members' && <ChiefMembersTab clan={chiefQuery.data} />}
               {activeTab === 'review' && <ChiefReviewTab clan={chiefQuery.data} />}
-              {activeTab === 'notices' && <ChiefNoticeTab clan={chiefQuery.data} />}
             </>
           )}
         </motion.div>

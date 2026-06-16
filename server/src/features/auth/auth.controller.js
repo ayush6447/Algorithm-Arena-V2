@@ -74,7 +74,12 @@ const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({
+      $or: [
+        { email: email.trim().toLowerCase() },
+        { username: email.trim() }
+      ]
+    }).select('+password');
 
     if (!user || !(await user.matchPassword(password))) {
       res.status(401);

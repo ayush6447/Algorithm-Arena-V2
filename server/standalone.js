@@ -15,10 +15,8 @@ async function runStandalone() {
     
     // Dynamically require server after env is set
     const { startServer, connectDB } = require('./server');
-    const { seedDatabase } = require('./seed');
 
     await connectDB();
-    await seedDatabase(true);
     await startServer();
     
     // Handle graceful shutdown

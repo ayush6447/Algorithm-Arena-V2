@@ -7,7 +7,7 @@ const { logger } = require('./utils/logger');
 
 const http = require('http');
 const { initSocket } = require('./config/socket');
-const { seedDatabase } = require('./seed');
+const { initializeDefaultUsers } = require('./initDb');
 
 const app = createApp();
 const server = http.createServer(app);
@@ -137,14 +137,12 @@ const startServer = async () => {
   try {
     await connectDB();
 
+    // Seed default users if database is empty
+    await initializeDefaultUsers();
+
     // Auto-repair clan indexes (one-time production fix)
     await repairClanIndexes();
 
-    // Seed database if requested (same as standalone)
-    if (process.env.SEED_ON_START === 'true') {
-      logger.info('SEED_ON_START is true, seeding database...');
-      await seedDatabase(true); // true passed to not exit process
-    }
 
     // Initialize Socket.io
     initSocket(server);

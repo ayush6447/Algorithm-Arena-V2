@@ -5,9 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "set SEED_ON_START=true&& nodemon server.js",
+    "dev": "nodemon server.js",
     "dev:standalone": "nodemon standalone.js",
-    "seed": "node seed.js",
     "db:normalize": "node scripts/normalize-database.js",
     "test": "node --test tests/api.integration.test.js",
     "check": "node --check app.js && node --check server.js"

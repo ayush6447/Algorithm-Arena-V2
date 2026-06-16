@@ -14,7 +14,6 @@ import DashboardTab from './admin/DashboardTab';
 import QuestionSetsTab from './admin/QuestionSetsTab';
 
 import ClanManagerTab from './admin/ClanManagerTab';
-import NoticeBoardTab from './admin/NoticeBoardTab';
 import ResourcesTab from './admin/ResourcesTab';
 import MembersTab from './admin/MembersTab';
 import ReviewTab from './admin/ReviewTab';
@@ -28,7 +27,6 @@ const AdminPanel = () => {
     { id: 'sets', label: 'Question Sets', icon: FiCode },
 
     { id: 'clans', label: 'Clan Manager', icon: FiShield },
-    { id: 'notices', label: 'Notice Board', icon: FiBell },
     { id: 'resources', label: 'Resources', icon: FiFolder },
     { id: 'members', label: 'Members', icon: FiUsers },
   ];
@@ -85,7 +83,6 @@ const AdminPanel = () => {
           {activeTab === 'sets' && <QuestionSetsTab />}
 
           {activeTab === 'clans' && <ClanManagerTab />}
-          {activeTab === 'notices' && <NoticeBoardTab />}
           {activeTab === 'resources' && <ResourcesTab />}
           {activeTab === 'members' && <MembersTab />}
         </motion.div>

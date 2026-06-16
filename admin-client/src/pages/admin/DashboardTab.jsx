@@ -107,10 +107,6 @@ const DashboardTab = ({ setActiveTab }) => {
               <span className="font-bold text-sm group-hover:text-accent transition-colors">Create Question Set</span>
               <FiPlus className="text-tertiary group-hover:text-accent transition-colors" />
             </button>
-            <button onClick={() => setActiveTab('notices')} className="w-full flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/5 hover:bg-yellow-500/10 hover:border-yellow-500/30 transition-all group">
-              <span className="font-bold text-sm group-hover:text-yellow-400 transition-colors">Post Notice</span>
-              <FiPlus className="text-tertiary group-hover:text-yellow-400 transition-colors" />
-            </button>
             <button onClick={() => setActiveTab('resources')} className="w-full flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/5 hover:bg-blue-500/10 hover:border-blue-500/30 transition-all group">
               <span className="font-bold text-sm group-hover:text-blue-400 transition-colors">Upload Resources</span>
               <FiPlus className="text-tertiary group-hover:text-blue-400 transition-colors" />
