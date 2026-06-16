@@ -67,7 +67,7 @@ const env = Object.freeze({
     parsed.data.NODE_ENV === 'test'
       ? false
       : parsed.data.COOKIE_SECURE ?? parsed.data.NODE_ENV === 'production',
-  CORS_ORIGINS: parsed.data.CORS_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean),
+  CORS_ORIGINS: parsed.data.CORS_ORIGINS.split(',').map((origin) => origin.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean),
 });
 
 module.exports = { env };
