@@ -42,8 +42,7 @@ const Badges = () => {
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {badges.map((badge, index) => {
-            // Mock logic: unlock first 4 badges or any Common/Rare badges if index is low
-            const isUnlocked = index < 4 || badge.rarity === 'COMMON';
+            const isUnlocked = badge.isUnlocked;
 
             return (
               <BaseCard
