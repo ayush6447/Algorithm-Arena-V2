@@ -97,7 +97,7 @@ const DiffBar = ({ label, solved, total, color, delay }) => {
 /* ══════════════════════════════════════════════════════════
    PROFILE SIDEBAR
    ══════════════════════════════════════════════════════════ */
-const ProfileSidebar = ({ user, summary, profile, badges, activeTab, setActiveTab }) => {
+const ProfileSidebar = ({ user, summary, profile, badges }) => {
   const initials = (user?.username || "?")[0].toUpperCase();
   const solved   = summary?.solved ?? profile?.acceptedCount ?? 0;
   const total    = summary?.totalChallenges ?? 0;
@@ -136,7 +136,7 @@ const ProfileSidebar = ({ user, summary, profile, badges, activeTab, setActiveTa
       // Name fallback
       return a.name.localeCompare(b.name);
     });
-  }, [badges]);
+  }, [badges, PRESTIGE_ORDER]);
 
   const [showModal, setShowModal] = React.useState(false);
   const [statusFilter, setStatusFilter] = React.useState("all");
@@ -169,7 +169,7 @@ const ProfileSidebar = ({ user, summary, profile, badges, activeTab, setActiveTa
 
       return a.name.localeCompare(b.name);
     });
-  }, [sortedBadges, statusFilter, sortBy]);
+  }, [sortedBadges, statusFilter, sortBy, PRESTIGE_ORDER]);
 
   const solvedPct = total > 0 ? Math.round((solved / total) * 100) : 0;
 
@@ -228,7 +228,7 @@ const ProfileSidebar = ({ user, summary, profile, badges, activeTab, setActiveTa
                 }}
               >
                 {user?.profilePicture
-                  ? <img src={user.profilePicture} alt="" referrerpolicy="no-referrer" className="w-full h-full object-cover" />
+                  ? <img src={user.profilePicture} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                   : initials
                 }
               </div>

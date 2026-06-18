@@ -41,7 +41,7 @@ const Badges = () => {
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {badges.map((badge, index) => {
+          {badges.map((badge) => {
             const isUnlocked = badge.isUnlocked;
 
             return (
