@@ -54,7 +54,14 @@ const Logo = ({
       <div className="flex flex-col justify-center min-w-0 select-none">
         {variant === "arena" && (
           <span className={clsx("font-black text-lg leading-none", textColorClass)}>
-            Algo<span style={{ color: "rgb(var(--accent-rgb))" }}>Arena</span>
+            Algo<span
+              style={{
+                background: `linear-gradient(135deg, rgb(var(--accent-rgb)), #a855f7, #ec4899)`,
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >Arena</span>
           </span>
         )}
 

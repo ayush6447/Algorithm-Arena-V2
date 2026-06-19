@@ -127,7 +127,7 @@ const ChallengeDetails = () => {
   const [reviewComment, setReviewComment] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [grading, setGrading] = useState(false);
-  
+
   // Resizer state
   const [leftWidth, setLeftWidth] = useState(45);
   const containerRef = useRef(null);
@@ -136,7 +136,7 @@ const ChallengeDetails = () => {
   // test-case panel takes up too much vertical space.
   const [bottomHeight, setBottomHeight] = useState(224); // matches old h-56
   const [bottomCollapsed, setBottomCollapsed] = useState(false);
-  
+
   const [isDark, setIsDark] = useState(
     document.documentElement.getAttribute("data-theme") === "dark",
   );
@@ -543,8 +543,8 @@ const ChallengeDetails = () => {
       </div>
 
       {/* Main Split Layout */}
-      <div 
-        ref={containerRef} 
+      <div
+        ref={containerRef}
         className="flex flex-col lg:flex-row flex-1 min-h-0 w-full relative h-full px-4 sm:px-6 lg:px-8 pb-4"
         style={{ '--left-width': `${leftWidth}%`, '--right-width': `calc(${100 - leftWidth}% - 12px)` }}
       >
@@ -585,7 +585,7 @@ const ChallengeDetails = () => {
           <div className="flex-1 overflow-y-auto p-5">
             {leftTab === "description" ? (
               <div className="space-y-4">
-                <div 
+                <div
                   className="leetcode-description text-sm leading-relaxed text-primary/90"
                   dangerouslySetInnerHTML={{ __html: sanitizedDescription }}
                 />
@@ -654,7 +654,7 @@ const ChallengeDetails = () => {
         </div>
 
         {/* Resizer */}
-        <div 
+        <div
           className="hidden lg:flex w-3 cursor-col-resize justify-center items-center group shrink-0 z-10 hover:bg-white/5 transition-colors"
           onMouseDown={handleMouseDown}
         >

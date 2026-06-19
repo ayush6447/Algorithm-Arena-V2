@@ -76,13 +76,13 @@ const ClanDashboard = ({ clan, userId, onLeave, readOnly, onBack }) => {
               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-accent mb-2 block">
                 {readOnly ? 'Clan Preview' : 'Your Clan'}
               </span>
-              <h2 className="text-3xl md:text-5xl font-black text-primary leading-tight">
+              <h1 className="text-3xl md:text-5xl font-black text-primary leading-tight">
                 {clan.name}
                 <span className="ml-3 text-lg font-mono text-accent/70">[{clan.tag}]</span>
-                <span className={`ml-3 inline-flex items-center rounded-full px-3 py-1 text-xs font-black uppercase tracking-widest ${isArchived ? 'bg-amber-500/15 text-amber-300' : 'bg-emerald-500/15 text-emerald-300'}`}>
+                <h2 className={`ml-3 inline-flex items-center rounded-full px-3 py-1 text-xs font-black uppercase tracking-widest ${isArchived ? 'bg-amber-500/15 text-amber-300' : 'bg-emerald-500/15 text-emerald-300'}`}>
                   {isArchived ? 'Archived' : 'Active'}
-                </span>
-              </h2>
+                </h2>
+              </h1>
               <p className="text-secondary mt-2 max-w-lg text-sm md:text-base">{clan.description}</p>
               {isArchived && (
                 <p className="mt-3 inline-flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-200">
@@ -219,8 +219,8 @@ const ClanBrowser = ({ clans, loading, userId, onApply, onViewClan, userHasClan,
           {userHasClan ? "Other Clans" : "Join a Clan"}
         </h2>
         <p className="text-secondary text-sm max-w-lg">
-          {userHasClan 
-            ? "Browse other clans in the arena to see their rosters and stats." 
+          {userHasClan
+            ? "Browse other clans in the arena to see their rosters and stats."
             : "Clans let you team up, compete together, and climb the leaderboards as a unit. Apply to join — once the chief approves, you're in!"}
         </p>
       </motion.div>

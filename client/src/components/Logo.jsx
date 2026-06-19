@@ -53,14 +53,19 @@ const Logo = ({
       {Img}
       <div className="flex flex-col justify-center min-w-0 select-none">
         {variant === "arena" && (
-          <span className={clsx("font-black text-lg leading-none", textColorClass)}>
-            Algo<span style={{ color: "rgb(var(--accent-rgb))" }}>Arena</span>
+          <span className={clsx("font-black text-lg leading-none font-h1", textColorClass)}>
+            Algo<span style={{
+                  background: `linear-gradient(135deg, rgb(var(--accent-rgb)), #a855f7, #ec4899)`,
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}>Arena</span>
           </span>
         )}
 
         {variant === "gdg" && (
           <>
-            <span className={clsx("font-black tracking-tight text-sm leading-none", textColorClass)}>
+            <span className={clsx("font-black tracking-tight text-sm leading-none font-h1", textColorClass)}>
               GDG on Campus
             </span>
             <span className="text-[10px] text-secondary tracking-widest font-black uppercase mt-0.5">
@@ -70,7 +75,7 @@ const Logo = ({
         )}
 
         {variant === "hybrid" && (
-          <span className={clsx("font-black tracking-tight text-lg leading-none uppercase", textColorClass)}>
+          <span className={clsx("font-black tracking-tight text-lg leading-none uppercase font-h1", textColorClass)}>
             GDG <span style={{ color: "rgb(var(--accent-rgb))" }}>Arena</span>
           </span>
         )}

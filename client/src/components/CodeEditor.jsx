@@ -227,7 +227,7 @@ function applyCustomValidation(monaco, model, language) {
 
 const EDITOR_OPTIONS = {
   fontSize: 13,
-  fontFamily: "'Fira Code', 'JetBrains Mono', 'Cascadia Code', monospace",
+  fontFamily: "var(--font-mono)",
   fontLigatures: true,
   lineNumbers: "on",
   minimap: { enabled: false },

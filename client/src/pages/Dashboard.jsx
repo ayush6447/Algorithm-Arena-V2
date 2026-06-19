@@ -169,9 +169,9 @@ const Dashboard = () => {
 
       {/* ── Greeting ────────────────────────── */}
       <motion.div {...fd(0.04)}>
-        <h1 className="text-3xl font-black text-primary mb-1">
+        <h2 className="text-3xl font-black text-primary mb-1 font-h2">
           {greeting.heading.replace("{username}", user?.username || "Operative")}
-        </h1>
+        </h2>
         <p className="text-secondary text-sm">
           {greeting.subtext}
         </p>
@@ -209,7 +209,7 @@ const Dashboard = () => {
               <span className="inline-block text-[10px] font-black uppercase tracking-[0.35em] text-accent mb-4">
                 Recommended for you
               </span>
-              <h2 className="text-4xl md:text-5xl font-black text:black leading-[1.1] dark:text-white mb-3">
+              <h1 className="text-4xl md:text-5xl font-black text:black leading-[1.1] dark:text-white mb-3 font-h1">
                 {activeSet ? (
                   <>
                     {activeSet.title.split(" ").slice(0, -1).join(" ")}{" "}
@@ -239,7 +239,7 @@ const Dashboard = () => {
                     </span>
                   </>
                 )}
-              </h2>
+              </h1>
               <p className="text-secondary text-sm leading-relaxed mb-6 max-w-md">
                 {activeSet
                   ? `Target Level: ${activeSet.targetLevel} • Due ${new Date(activeSet.deadline).toLocaleDateString()}`
@@ -282,7 +282,7 @@ const Dashboard = () => {
       {activeSets.length > 1 && (
         <motion.div {...fd(0.1)}>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-black text-primary">
+            <h2 className="text-base font-black text-primary font-h2">
               Active Question Sets
             </h2>
             <span className="text-xs text-tertiary font-bold">
@@ -304,9 +304,9 @@ const Dashboard = () => {
                     hover:shadow-[0_0_20px_rgba(var(--accent-rgb),0.15)]"
                 >
                   <div className="flex items-start justify-between gap-2 mb-2">
-                    <h3 className="text-sm font-bold text-primary group-hover:text-accent transition-colors line-clamp-1">
+                    <h2 className="text-sm font-bold text-primary group-hover:text-accent transition-colors line-clamp-1 font-h2">
                       {set.title}
-                    </h3>
+                    </h2>
                     <span className="text-[9px] font-black text-accent bg-accent/10 px-2 py-0.5 rounded-full flex-shrink-0">
                       Week {set.weekNumber}
                     </span>
@@ -368,11 +368,11 @@ const Dashboard = () => {
             >
               <Icon size={16} className={`${color} opacity-50 flex-shrink-0`} />
               <div className="min-w-0">
-                <p className="text-[9px] text-tertiary uppercase tracking-widest font-bold mb-0.5 truncate">
+                <p className="text-[9px] text-tertiary uppercase tracking-widest font-bold mb-0.5 truncate font-h2">
                   {label}
                 </p>
                 <div className="flex items-baseline gap-2">
-                  <span className={`text-xl font-black ${color}`}>{value}</span>
+                  <span className={`text-xl font-black ${color} font-h2`}>{value}</span>
                   <span className="text-[10px] text-green-500 font-bold">
                     {delta}
                   </span>
@@ -388,7 +388,7 @@ const Dashboard = () => {
         {/* LEFT: Available Missions */}
         <motion.div {...fd(0.16)} className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-black text-primary">
+            <h2 className="text-base font-black text-primary font-h2">
               Available Missions
             </h2>
             <Link
@@ -499,9 +499,9 @@ const Dashboard = () => {
                           </span>
                         </div>
                         <div className="flex items-start justify-between gap-3">
-                          <h3 className="text-sm font-bold leading-snug text-primary group-hover:text-accent transition-colors line-clamp-2 flex-1">
+                          <h2 className="text-sm font-bold leading-snug text-primary group-hover:text-accent transition-colors line-clamp-2 flex-1 font-h2">
                             {ch.title}
-                          </h3>
+                          </h2>
                           {/* eslint-disable-next-line */}
                           {new Date() - new Date(ch.createdAt || Date.now()) <
                             7 * 24 * 60 * 60 * 1000 && (
@@ -542,7 +542,7 @@ const Dashboard = () => {
 
         {/* RIGHT: Recent Activity */}
         <motion.div {...fd(0.18)} className="space-y-4">
-          <h2 className="text-base font-black text-primary flex items-center gap-2">
+          <h2 className="text-base font-black text-primary flex items-center gap-2 font-h2">
             <FiActivity className="text-accent" size={16} /> Recent Activity
           </h2>
 

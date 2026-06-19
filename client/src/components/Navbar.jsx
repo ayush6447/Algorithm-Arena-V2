@@ -64,7 +64,7 @@ const Navbar = ({ onLogout }) => {
                     key={item.path}
                     to={item.path}
                     className={clsx(
-                      "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200",
+                      "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 font-h2",
                       isActive
                         ? "bg-accent/10 text-accent"
                         : "text-secondary hover:text-primary hover:bg-white/5",
@@ -229,7 +229,7 @@ const Navbar = ({ onLogout }) => {
                   to={item.path}
                   onClick={closeMenu}
                   className={clsx(
-                    "flex items-center gap-3 px-3 py-3 rounded-lg transition-all",
+                    "flex items-center gap-3 px-3 py-3 rounded-lg transition-all font-h2",
                     active
                       ? "bg-accent/15 text-accent"
                       : "text-primary hover:bg-white/5",

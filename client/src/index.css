@@ -1,12 +1,24 @@
 /* ==========================================================================
    FONT CONFIGURATION AREA (Change your fonts here!)
    ========================================================================== */
-/* 1. Import your Google Fonts or custom font packages here: */
-@import url("https://rsms.me/inter/inter.css");
-/* Example alternative imports (uncomment to test): */
-@import url('https://fonts.googleapis.com/css2?family=Michroma&family=Orbitron:wght@400..900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 
+/* 1. IMPORT GOOGLE FONTS & CUSTOM FONTS
+   Uncomment or add imports below to easily test different styling. */
+
+/* Default Stack Imports: Inter (Body), Michroma & Orbitron (Headings) */
+@import url("https://rsms.me/inter/inter.css");
+@import url('https://fonts.googleapis.com/css2?family=Michroma&family=Orbitron:wght@400..900&display=swap');
+
+/* Additional Alternative Premium Fonts (Pre-imported for easy testing): */
+/*
+   - Space Grotesk: Futuristic, clean, geometric heading font
+   - Outfit: Sleek, high-end, modern branding font
+   - Plus Jakarta Sans: Extremely premium and readable neo-grotesque body font
+   - JetBrains Mono: Gorgeous, clean developer monospaced code font
+   - Syne: Expressive, artistic headline font
+   - Montserrat: Bold, high-character sans-serif
+*/
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,400;1,200&family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap');
 
 /* Tailwind Engine Directives */
 @tailwind base;
@@ -14,11 +26,23 @@
 @tailwind utilities;
 
 :root {
-    /* 2. Set your primary sans-serif and monospace font stacks here: */
-    --font-sans: "Michroma", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    /* 2. CHOOSE YOUR FONTS FOR EACH TYPE OF TEXT HERE: */
 
-    --font-stack: var(--font-sans);
+    /* [H1] Display / Hero Font (Try: "Michroma", "Orbitron", "Syne", "Outfit", "Space Grotesk") */
+    --font-h1: "Michroma", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+    /* [H2] Subheadings / Section Titles (Try: "Orbitron", "Michroma", "Outfit", "Space Grotesk", "Montserrat") */
+    --font-h2: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+    /* [BODY] Paragraphs, Cards, Inputs, General Text (Try: "Inter", "Plus Jakarta Sans", "Montserrat") */
+    --font-body: "Work Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+    /* [MONOSPACE] Code, Technical Stats, Timestamps (Try: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco) */
+    --font-mono: "Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+    /* Legacy compatibility mappings: */
+    --font-sans: var(--font-body);
+    --font-stack: var(--font-body);
     --font-size-display: clamp(2rem, 3.2vw, 3.75rem);
     --font-size-h1: clamp(1.6rem, 2.4vw, 2.4rem);
     --font-size-h2: clamp(1.2rem, 1.6vw, 1.8rem);
@@ -222,6 +246,40 @@ body {
 *:focus-visible {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
+}
+
+/* Apply default font families to HTML elements for seamless rendering */
+h1,
+.font-h1,
+.text-display,
+.text-page-title {
+    font-family: var(--font-h1);
+}
+
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-h2,
+.text-section-title {
+    font-family: var(--font-h2);
+}
+
+body,
+p,
+.font-body,
+.text-body,
+.text-caption {
+    font-family: var(--font-body);
+}
+
+code,
+pre,
+kbd,
+samp,
+.font-mono {
+    font-family: var(--font-mono);
 }
 
 .text-display {

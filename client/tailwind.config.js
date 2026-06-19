@@ -7,6 +7,9 @@ export default {
       fontFamily: {
         sans: ["var(--font-sans)", "sans-serif"],
         mono: ["var(--font-mono)", "monospace"],
+        h1: ["var(--font-h1)", "sans-serif"],
+        h2: ["var(--font-h2)", "sans-serif"],
+        body: ["var(--font-body)", "sans-serif"],
       },
       colors: {
         // Mapping Tailwind to your CSS Variables

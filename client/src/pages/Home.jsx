@@ -132,7 +132,7 @@ const FloatingSnippet = ({ text, style, depth, rotation }) => (
   <span
     className="absolute font-mono text-[11px] font-bold select-none pointer-events-none transition-transform duration-300 ease-out"
     style={{
-      color: `rgba(var(--accent-rgb), .2)`,
+      color: `rgba(var(--accent-rgb), .3)`,
       letterSpacing: "0.05em",
       transform: `rotate(${rotation}deg) translate(calc(var(--mouse-offset-x, 0) * ${depth * -40}px), calc(var(--mouse-offset-y, 0) * ${depth * -40}px))`,
       ...style,
@@ -185,18 +185,61 @@ const Home = () => {
   const heroOpacity = useTransform(scrollY, [0, 300], [1, 0.1]);
 
   useEffect(() => {
+    const el = homeRef.current;
+    if (!el) return;
+
+    let mouseX = 0;
+    let mouseY = 0;
+    let lastMouseMoveTime = 0;
+    let animationFrameId;
+
     const handleMouseMove = (e) => {
-      const el = homeRef.current;
-      if (!el) return;
-      const x = (e.clientX / window.innerWidth) - 0.5;
-      const y = (e.clientY / window.innerHeight) - 0.5;
+      mouseX = (e.clientX / window.innerWidth) - 0.5;
+      mouseY = (e.clientY / window.innerHeight) - 0.5;
+      lastMouseMoveTime = Date.now();
+
       el.style.setProperty("--mouse-x", `${e.clientX}px`);
       el.style.setProperty("--mouse-y", `${e.clientY}px`);
-      el.style.setProperty("--mouse-offset-x", `${x}`);
-      el.style.setProperty("--mouse-offset-y", `${y}`);
     };
+
+    let curX = 0;
+    let curY = 0;
+
+    const tick = (time) => {
+      const idleTime = Date.now() - lastMouseMoveTime;
+      let blend = 1;
+
+      if (lastMouseMoveTime === 0) {
+        blend = 0;
+      } else if (idleTime > 1000) {
+        blend = Math.max(0, 1 - (idleTime - 1000) / 1500);
+      }
+
+      // Gentle oscillation/orbit values
+      const autoX = Math.sin(time * 0.001) * 0.12;
+      const autoY = Math.cos(time * 0.0015) * 0.12;
+
+      // Target coords based on active state / blend
+      const targetX = mouseX * blend + autoX * (1 - blend);
+      const targetY = mouseY * blend + autoY * (1 - blend);
+
+      // Lerp for smooth transitions
+      curX += (targetX - curX) * 0.08;
+      curY += (targetY - curY) * 0.08;
+
+      el.style.setProperty("--mouse-offset-x", `${curX}`);
+      el.style.setProperty("--mouse-offset-y", `${curY}`);
+
+      animationFrameId = requestAnimationFrame(tick);
+    };
+
     window.addEventListener("mousemove", handleMouseMove, { passive: true });
-    return () => window.removeEventListener("mousemove", handleMouseMove);
+    animationFrameId = requestAnimationFrame(tick);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      cancelAnimationFrame(animationFrameId);
+    };
   }, []);
 
   const challengesQuery = useQuery({
@@ -514,7 +557,7 @@ const Home = () => {
             )}
 
             {/* Available Missions */}
-            <section className="space-y-8">
+            <section className="space-y-8 max-md:space-y-4">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
                 <div>
                   {/* Section eyebrow */}
