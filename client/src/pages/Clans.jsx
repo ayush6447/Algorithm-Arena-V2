@@ -48,7 +48,7 @@ const StatCard = ({ icon, label, value, color }) => {
 
 /* ─── Clan Dashboard ─────────────── */
 
-const ClanDashboard = ({ clan, userId, onLeave, onBrowseOthers, readOnly, onBack }) => {
+const ClanDashboard = ({ clan, userId, onLeave, readOnly, onBack }) => {
   const members = clan.members || [];
   // eslint-disable-next-line no-unused-vars
   const requests = clan.requests || [];

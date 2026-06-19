@@ -154,7 +154,7 @@ const ProfileSidebar = ({ user, summary, profile, badges }) => {
       // Name fallback
       return a.name.localeCompare(b.name);
     });
-  }, [badges, PRESTIGE_ORDER]);
+  }, [badges]);
 
   const [showModal, setShowModal] = React.useState(false);
   const [statusFilter, setStatusFilter] = React.useState("all");
@@ -187,7 +187,7 @@ const ProfileSidebar = ({ user, summary, profile, badges }) => {
 
       return a.name.localeCompare(b.name);
     });
-  }, [sortedBadges, statusFilter, sortBy, PRESTIGE_ORDER]);
+  }, [sortedBadges, statusFilter, sortBy]);
 
   const solvedPct = total > 0 ? Math.round((solved / total) * 100) : 0;
 
