@@ -725,6 +725,13 @@ const assignChief = async (req, res, next) => {
 
     if (res.headersSent) return null;
 
+    const populated = await Clan.findById(clanId)
+      .populate('chief', 'username email')
+      .populate('members', 'username email');
+
+    sendSuccess(res, { data: populated, message: 'Clan chief assigned' });
+
+    // Fire-and-forget the notification email so the request doesn't block on SMTP.
     if (promotedChief) {
       const { sendEmail } = require('../../../utils/emailService');
       const safeName = escapeHtml(promotedChief.username);
@@ -737,14 +744,11 @@ const assignChief = async (req, res, next) => {
           <p>Log in to access your Chief Dashboard and lead your clan to victory.</p>
         </div>
       `;
-      await sendEmail(promotedChief.email, 'Algorithm Arena - Promoted to Clan Chief', htmlContent);
+      sendEmail(promotedChief.email, 'Algorithm Arena - Promoted to Clan Chief', htmlContent)
+        .catch((err) => console.error('Failed to send chief promotion email:', err?.message || err));
     }
 
-    const populated = await Clan.findById(clanId)
-      .populate('chief', 'username email')
-      .populate('members', 'username email');
-
-    return sendSuccess(res, { data: populated, message: 'Clan chief assigned' });
+    return null;
   } catch (err) {
     return next(err);
   }
@@ -808,6 +812,13 @@ const addMember = async (req, res, next) => {
 
     if (res.headersSent) return null;
 
+    const populated = await Clan.findById(clanId)
+      .populate('chief', 'username email')
+      .populate('members', 'username email');
+
+    sendSuccess(res, { data: populated, message: 'Member added' });
+
+    // Fire-and-forget the welcome email so the request doesn't block on SMTP.
     if (newMember) {
       const { sendEmail } = require('../../../utils/emailService');
       const safeMember = escapeHtml(newMember.username);
@@ -822,14 +833,11 @@ const addMember = async (req, res, next) => {
           <p>Prepare for battle in the Algorithm Arena.</p>
         </div>
       `;
-      await sendEmail(newMember.email, `Algorithm Arena - Added to Clan ${safeClan}`, htmlContent);
+      sendEmail(newMember.email, `Algorithm Arena - Added to Clan ${safeClan}`, htmlContent)
+        .catch((err) => console.error('Failed to send clan welcome email:', err?.message || err));
     }
 
-    const populated = await Clan.findById(clanId)
-      .populate('chief', 'username email')
-      .populate('members', 'username email');
-
-    return sendSuccess(res, { data: populated, message: 'Member added' });
+    return null;
   } catch (err) {
     return next(err);
   }

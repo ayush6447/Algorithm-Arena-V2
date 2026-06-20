@@ -9,15 +9,6 @@ import toast from 'react-hot-toast';
 import Logo from '../components/Logo';
 
 
-const PRESET_AVATARS = [
-  'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop',
-  'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop',
-  'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=400&h=400&fit=crop',
-  'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=400&fit=crop',
-  'https://images.unsplash.com/photo-1628157588553-5eeea00af15c?w=400&h=400&fit=crop',
-  'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=400&h=400&fit=crop',
-];
-
 const Settings = () => {
   const { user, updateUser } = useAuth();
   const fileInputRef = React.useRef(null);
@@ -404,16 +395,6 @@ const Settings = () => {
                 <p className="text-[10px] text-tertiary">PNG or JPG up to 2MB</p>
               </div>
               <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
-            </div>
-
-            <div className="mb-8 grid grid-cols-3 gap-4">
-              {PRESET_AVATARS.map((url, index) => (
-                <button key={index} type="button"
-                  className="aspect-square overflow-hidden rounded-xl border-2 border-transparent transition-all hover:border-accent"
-                  onClick={() => handleAvatarSelect(url)}>
-                  <img src={url} alt={`Avatar ${index + 1}`} className="h-full w-full object-cover" />
-                </button>
-              ))}
             </div>
 
             <div className="flex gap-2">

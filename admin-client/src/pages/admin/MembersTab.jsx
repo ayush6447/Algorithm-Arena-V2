@@ -18,6 +18,7 @@ const MembersTab = () => {
   const [levelFilter, setLevelFilter] = useState('');
   const [clanFilter, setClanFilter] = useState('');
   const [menuOpen, setMenuOpen] = useState(null);
+  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
   const canManageUsers = canManageClanGlobally(user);
   const [adminEmail, setAdminEmail] = useState('');
 
@@ -260,58 +261,22 @@ const MembersTab = () => {
                       {getStatusDot(user.status || 'Active')}
                     </div>
                   </td>
-                  <td className="p-4 text-right pr-6 relative">
-                    <button 
-                      onClick={() => setMenuOpen(menuOpen === user._id ? null : user._id)}
-                      className="p-2 hover:bg-white/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 text-tertiary"
+                  <td className="p-4 text-right pr-6">
+                    <button
+                      onClick={(e) => {
+                        if (menuOpen === user._id) {
+                          setMenuOpen(null);
+                          return;
+                        }
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setMenuPos({ top: rect.bottom + 6, right: window.innerWidth - rect.right });
+                        setMenuOpen(user._id);
+                      }}
+                      className="p-2 hover:bg-white/10 rounded-lg transition-colors text-tertiary hover:text-primary"
+                      aria-label="Member actions"
                     >
                       <FiMoreVertical />
                     </button>
-                    {menuOpen === user._id && (
-                       <div className="absolute right-10 top-4 w-48 bg-[#121218] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50">
-                         <div className="p-1">
-                           {user.role === 'superAdmin' ? (
-                             <div className="px-3 py-2 text-xs text-tertiary italic flex items-center gap-2">
-                               <FiShield className="text-yellow-400" /> Protected Super Admin
-                             </div>
-                           ) : (
-                             <>
-                               <button 
-                                 onClick={() => handleRoleChange(user, 'clan-chief')}
-                                 disabled={!canManageUsers}
-                                 className="w-full text-left px-3 py-2 text-sm text-secondary hover:text-white hover:bg-white/5 rounded flex items-center gap-2 disabled:opacity-50"
-                               >
-                                 <FiShield className="text-blue-400" /> Make Clan Chief
-                               </button>
-                               <button 
-                                 onClick={() => handleRoleChange(user, 'user')}
-                                 disabled={!canManageUsers || user.role === 'user'}
-                                 className="w-full text-left px-3 py-2 text-sm text-secondary hover:text-white hover:bg-white/5 rounded flex items-center gap-2 disabled:opacity-50"
-                               >
-                                 <FiUserCheck className="text-green-400" /> Make Member
-                               </button>
-                             </>
-                           )}
-                           <div className="h-px bg-white/10 my-1 mx-2" />
-                           <button 
-                             onClick={() => {
-                               if (!canManageUsers) return;
-                               if (user.role === 'superAdmin') {
-                                 toast.error("Cannot ban a superAdmin");
-                                 return;
-                               }
-                               if(window.confirm(`Ban user ${user.username}?`)) {
-                                 banUserMutation.mutate(user._id);
-                               }
-                             }}
-                             disabled={!canManageUsers || user.role === 'superAdmin'}
-                             className="w-full text-left px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded flex items-center gap-2 disabled:opacity-50"
-                           >
-                             <FiUserX /> Ban User
-                           </button>
-                         </div>
-                       </div>
-                    )}
                   </td>
                 </motion.tr>
               ))}
@@ -326,9 +291,61 @@ const MembersTab = () => {
         </div>
       </BaseCard>
 
-      {menuOpen && (
-        <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(null)} />
-      )}
+      {menuOpen && (() => {
+        const menuUser = filteredUsers.find((u) => u._id === menuOpen);
+        if (!menuUser) return null;
+        return (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(null)} />
+            <div
+              style={{ top: menuPos.top, right: menuPos.right }}
+              className="fixed w-48 bg-[#121218] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50"
+            >
+              <div className="p-1">
+                {menuUser.role === 'superAdmin' ? (
+                  <div className="px-3 py-2 text-xs text-tertiary italic flex items-center gap-2">
+                    <FiShield className="text-yellow-400" /> Protected Super Admin
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => handleRoleChange(menuUser, 'clan-chief')}
+                      disabled={!canManageUsers}
+                      className="w-full text-left px-3 py-2 text-sm text-secondary hover:text-white hover:bg-white/5 rounded flex items-center gap-2 disabled:opacity-50"
+                    >
+                      <FiShield className="text-blue-400" /> Make Clan Chief
+                    </button>
+                    <button
+                      onClick={() => handleRoleChange(menuUser, 'user')}
+                      disabled={!canManageUsers || menuUser.role === 'user'}
+                      className="w-full text-left px-3 py-2 text-sm text-secondary hover:text-white hover:bg-white/5 rounded flex items-center gap-2 disabled:opacity-50"
+                    >
+                      <FiUserCheck className="text-green-400" /> Make Member
+                    </button>
+                  </>
+                )}
+                <div className="h-px bg-white/10 my-1 mx-2" />
+                <button
+                  onClick={() => {
+                    if (!canManageUsers) return;
+                    if (menuUser.role === 'superAdmin') {
+                      toast.error("Cannot ban a superAdmin");
+                      return;
+                    }
+                    if (window.confirm(`Ban user ${menuUser.username}?`)) {
+                      banUserMutation.mutate(menuUser._id);
+                    }
+                  }}
+                  disabled={!canManageUsers || menuUser.role === 'superAdmin'}
+                  className="w-full text-left px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded flex items-center gap-2 disabled:opacity-50"
+                >
+                  <FiUserX /> Ban User
+                </button>
+              </div>
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 };

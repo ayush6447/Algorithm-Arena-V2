@@ -203,10 +203,22 @@ const Missions = () => {
     );
   }, [availableDifficulties]);
 
-  const groupedChallenges = useMemo(() => {
-    if (filters.grouping === 'none') return { "All Missions": challenges };
+  // Apply the Solved / Pending Review status filter client-side. The challenges
+  // API has no per-user status, so we match against the user's own submissions.
+  const statusFilteredChallenges = useMemo(() => {
+    if (filters.status === 'Accepted') {
+      return challenges.filter((ch) => subsMap[ch._id] === 'Accepted');
+    }
+    if (filters.status === 'Pending') {
+      return challenges.filter((ch) => subsMap[ch._id] === 'Pending');
+    }
+    return challenges;
+  }, [challenges, filters.status, subsMap]);
 
-    return challenges.reduce((acc, ch) => {
+  const groupedChallenges = useMemo(() => {
+    if (filters.grouping === 'none') return { "All Missions": statusFilteredChallenges };
+
+    return statusFilteredChallenges.reduce((acc, ch) => {
       const date = new Date(ch.createdAt || FALLBACK_CREATED_AT);
       let key = "";
 
@@ -229,7 +241,7 @@ const Missions = () => {
       acc[key].push(ch);
       return acc;
     }, {});
-  }, [challenges, filters.grouping]);
+  }, [statusFilteredChallenges, filters.grouping]);
 
   const MotionBlock = motion.div;
 

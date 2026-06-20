@@ -4,15 +4,18 @@ import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiPlus, FiTrash2, FiFolder, FiFileText, FiLink, FiDownload, FiX, FiUploadCloud } from 'react-icons/fi';
 import BaseCard from '../../components/BaseCard';
-import { api } from '../../lib/api';
+import { api, API_BASE_URL } from '../../lib/api';
 
 const TOPICS = ['Arrays', 'Linked Lists', 'DP', 'Graphs', 'Trees', 'Stacks & Queues', 'Strings', 'Sorting'];
+
+// Uploaded files are stored as a relative backend path; external links are absolute.
+const resolveFileUrl = (url) => (!url || url.startsWith('http') ? url : `${API_BASE_URL}${url}`);
 
 const ResourcesTab = () => {
   const queryClient = useQueryClient();
   const [activeFolder, setActiveFolder] = useState('Arrays');
   const [uploadModal, setUploadModal] = useState(false);
-  const [form, setForm] = useState({ title: '', folder: 'Arrays', type: 'PDF', url: '', sizeBytes: 0 });
+  const [form, setForm] = useState({ title: '', folder: 'Arrays', type: 'PDF', url: '', sizeBytes: 0, file: null });
   const [dragActive, setDragActive] = useState(false);
   const [fileName, setFileName] = useState('');
 
@@ -26,14 +29,29 @@ const ResourcesTab = () => {
 
   const uploadMutation = useMutation({
     mutationFn: async (data) => {
-      const res = await api.post('/api/resources', data);
+      if (data.type === 'PDF') {
+        const fd = new FormData();
+        fd.append('file', data.file);
+        fd.append('title', data.title);
+        fd.append('folder', data.folder);
+        const res = await api.post('/api/resources/upload', fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        return res.data;
+      }
+      const res = await api.post('/api/resources', {
+        title: data.title,
+        folder: data.folder,
+        type: data.type,
+        url: data.url,
+      });
       return res.data;
     },
     onSuccess: () => {
       toast.success('Resource added!');
       queryClient.invalidateQueries({ queryKey: ['admin-resources'] });
       setUploadModal(false);
-      setForm({ title: '', folder: activeFolder, type: 'PDF', url: '', sizeBytes: 0 });
+      setForm({ title: '', folder: activeFolder, type: 'PDF', url: '', sizeBytes: 0, file: null });
       setFileName('');
     },
     onError: (err) => {
@@ -67,19 +85,22 @@ const ResourcesTab = () => {
   };
 
   const handleFile = (file) => {
-    if (file.size > 20 * 1024 * 1024) {
-      toast.error('File exceeds 20MB limit');
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error('File exceeds 8MB limit');
       return;
     }
     setFileName(file.name);
-    if (!form.title) setForm(p => ({ ...p, title: file.name.replace('.pdf', '') }));
-    setForm(p => ({ ...p, type: 'PDF', sizeBytes: file.size, url: URL.createObjectURL(file) })); // Mock URL
+    if (!form.title) setForm(p => ({ ...p, title: file.name.replace(/\.pdf$/i, '') }));
+    setForm(p => ({ ...p, type: 'PDF', sizeBytes: file.size, file }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (form.type === 'PDF' && !form.url) {
+    if (form.type === 'PDF' && !form.file) {
       toast.error('Please upload a PDF file'); return;
+    }
+    if (form.type === 'LINK' && !form.url) {
+      toast.error('Please enter a URL'); return;
     }
     uploadMutation.mutate(form);
   };
@@ -140,7 +161,7 @@ const ResourcesTab = () => {
                   </div>
                 </div>
                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <a href={res.url} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg bg-white/5 text-secondary hover:bg-white/10 hover:text-white transition-colors">
+                  <a href={resolveFileUrl(res.url)} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg bg-white/5 text-secondary hover:bg-white/10 hover:text-white transition-colors">
                     {res.type === 'PDF' ? <FiDownload /> : <FiLink />}
                   </a>
                   <button onClick={() => { if(window.confirm('Delete resource?')) deleteMutation.mutate(res._id); }} className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">
@@ -171,7 +192,7 @@ const ResourcesTab = () => {
 
                 <div className="flex bg-white/5 p-1 rounded-xl">
                   {['PDF', 'LINK'].map(type => (
-                    <button key={type} onClick={() => setForm({ ...form, type, url: '' })} className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors ${form.type === type ? 'bg-blue-500 text-white shadow' : 'text-tertiary hover:text-secondary'}`}>
+                    <button key={type} onClick={() => { setForm({ ...form, type, url: '', file: null, sizeBytes: 0 }); setFileName(''); }} className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors ${form.type === type ? 'bg-blue-500 text-white shadow' : 'text-tertiary hover:text-secondary'}`}>
                       {type}
                     </button>
                   ))}

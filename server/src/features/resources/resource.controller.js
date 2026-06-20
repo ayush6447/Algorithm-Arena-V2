@@ -22,6 +22,15 @@ exports.createResource = async (req, res, next) => {
     if (!req.body.url) {
       return res.status(400).json({ success: false, message: 'A URL is required for link resources' });
     }
+    // Reject non-shareable URLs. blob:/data: links only resolve in the uploader's
+    // own browser session, so they break for every other user. PDFs must go
+    // through POST /api/resources/upload instead.
+    if (/^(blob:|data:)/i.test(req.body.url.trim())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Local file (blob/data) URLs cannot be shared. Upload the PDF file instead of pasting a generated link.',
+      });
+    }
     const { fileData, ...safeBody } = req.body; // never accept raw fileData here
     const resource = await Resource.create({
       ...safeBody,
