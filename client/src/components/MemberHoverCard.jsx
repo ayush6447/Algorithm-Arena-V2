@@ -8,12 +8,14 @@ import {
 } from "react-icons/fi";
 
 import { api } from "../lib/api";
+import MasteryPieChart from "./MasteryPieChart";
+import ClanHoverCard from "./ClanHoverCard";
 
 
 
 /* ── Full Profile Modal (Identity Card Design) ───────────────────────── */
 const IdentityHoverCard = ({ userId, username, position }) => {
-  
+
 
   const profileQ = useQuery({
     queryKey: ["member-profile", userId || username],
@@ -32,16 +34,16 @@ const IdentityHoverCard = ({ userId, username, position }) => {
     refetchInterval: 10000,
   });
 
-  
+
   const p = profileQ.data;
 
-  
+
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95, y: position?.yOffset || 0 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95, y: position?.yOffset || 0, transition: { duration: 0.15 } }}
-      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 6, transition: { duration: 0.12 } }}
+      transition={{ duration: 0.18, ease: "easeOut" }}
       className="absolute z-[9999] cursor-pointer origin-top-left"
       style={{
         top: position?.top || 0, left: position?.left || 0,
@@ -59,20 +61,25 @@ const IdentityHoverCard = ({ userId, username, position }) => {
               <p className="font-mono uppercase tracking-widest text-xs">Entity Not Found.</p>
            </div>
         ) : (() => {
-          const xp = p.totalPoints || 0;
-          const level = Math.floor(xp / 500) + 1;
-          const xpInLevel = xp % 500;
-          const xpPct = (xpInLevel / 500) * 100;
-          const diff = p.difficultyBreakdown || { easy: { solved: 0, total: 1 }, medium: { solved: 0, total: 1 }, hard: { solved: 0, total: 1 } };
-          
+           const xp = p.totalPoints || 0;
+           const level = Math.floor(xp / 500) + 1;
+           const xpInLevel = xp % 500;
+           const xpPct = (xpInLevel / 500) * 100;
+           const diff = p.difficultyBreakdown || { easy: { solved: 0, total: 1 }, medium: { solved: 0, total: 1 }, hard: { solved: 0, total: 1 } };
+           const easy = diff.easy ?? { solved: 0, total: 0 };
+           const medium = diff.medium ?? { solved: 0, total: 0 };
+           const hard = diff.hard ?? { solved: 0, total: 0 };
+           const total = (easy.total + medium.total + hard.total) || 1;
+           const solvedPct = Math.round(((p.acceptedCount || 0) / total) * 100);
+
           return (
             <div
               className="relative w-full overflow-hidden rounded-[2rem] border border-black/[0.08] dark:border-white/[0.08] bg-[var(--glass-surface)] backdrop-blur-md shadow-2xl shadow-black/10 dark:shadow-black/60"
               style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.1), inset 0 0 40px rgba(var(--accent-rgb), 0.03)" }}
             >
-              <div className="absolute inset-0 opacity-[0.02] dark:opacity-[0.03] pointer-events-none" 
+              <div className="absolute inset-0 opacity-[0.02] dark:opacity-[0.03] pointer-events-none"
                 style={{ backgroundImage: "radial-gradient(var(--fg-primary) 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
-              
+
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-accent to-transparent opacity-50" />
 
               <div className="relative p-6 md:p-8">
@@ -80,7 +87,7 @@ const IdentityHoverCard = ({ userId, username, position }) => {
                 <div className="flex flex-col md:flex-row items-center md:items-start gap-6 mb-8">
                   {/* Avatar */}
                   <div className="relative group shrink-0">
-                    <div className="w-24 h-24 md:w-28 md:h-28 rounded-[1.5rem] bg-black/[0.05] dark:bg-black border-2 border-accent/20 flex items-center justify-center text-4xl font-black text-primary dark:text-white relative overflow-hidden">
+                    <div className="w-24 h-24 md:w-28 md:h-28 rounded-full bg-black/[0.05] dark:bg-black border-2 border-accent/20 flex items-center justify-center text-4xl font-black text-primary dark:text-white relative overflow-hidden">
                       <div className="absolute inset-0 bg-gradient-to-br from-accent/10 to-transparent opacity-50" />
                       {p.profilePicture ? (
                         <img src={p.profilePicture} referrerPolicy="no-referrer" className="relative z-10 w-full h-full object-cover" alt="" />
@@ -96,17 +103,19 @@ const IdentityHoverCard = ({ userId, username, position }) => {
                   <div className="flex-1 text-center md:text-left pt-1">
                     <h1 className="text-3xl md:text-4xl font-black text-primary tracking-tight mb-1 truncate">{p.username}</h1>
                     <p className="text-sm italic text-secondary mb-4 font-medium truncate">"{p.bio || "Expert Algorithmist"}"</p>
-                    
+
                     <div className="flex flex-wrap justify-center md:justify-start gap-2">
                       <div className="px-3 py-1 rounded-lg bg-accent/10 border border-accent/20 text-[9px] font-black uppercase tracking-widest text-accent flex items-center gap-1.5">
                         <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
                         {p.role === "admin" ? "ADMIN" : p.role === "chief" ? "CHIEF" : "CODER"}
                       </div>
                       {p.clan && (
-                        <div className="px-3 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-[9px] font-black uppercase tracking-widest text-blue-400 flex items-center gap-1.5">
-                          <FiActivity size={10} />
-                          {p.clan.name || "MEMBER"}
-                        </div>
+                        <ClanHoverCard clanId={p.clan._id || p.clan}>
+                          <div className="px-3 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-[9px] font-black uppercase tracking-widest text-blue-400 flex items-center gap-1.5 hover:border-accent/40 transition-all cursor-pointer">
+                            <FiActivity size={10} />
+                            {p.clan.name || "MEMBER"}
+                          </div>
+                        </ClanHoverCard>
                       )}
                     </div>
                   </div>
@@ -124,7 +133,7 @@ const IdentityHoverCard = ({ userId, username, position }) => {
                         <span className="text-xs font-mono text-tertiary">{xpInLevel} <span className="text-black/20 dark:text-white/20">/</span> 500 XP</span>
                       </div>
                       <div className="h-1.5 w-full bg-black/[0.03] dark:bg-white/[0.03] border border-black/5 dark:border-white/5 rounded-full overflow-hidden">
-                        <motion.div 
+                        <motion.div
                           initial={{ width: 0 }} animate={{ width: `${xpPct}%` }} transition={{ duration: 1.5, ease: "easeOut" }}
                           className="h-full bg-accent shadow-[0_0_15px_rgba(var(--accent-rgb),0.5)]"
                         />
@@ -159,25 +168,8 @@ const IdentityHoverCard = ({ userId, username, position }) => {
                       <p className="text-[9px] font-black uppercase tracking-[0.2em]">Performance Matrix</p>
                     </div>
 
-                    <div className="space-y-4">
-                      {[
-                        { label: "EASY", value: diff.easy.solved, total: Math.max(diff.easy.total, 1), color: "text-green-400", bg: "bg-green-500" },
-                        { label: "MEDIUM", value: diff.medium.solved, total: Math.max(diff.medium.total, 1), color: "text-yellow-400", bg: "bg-yellow-500" },
-                        { label: "HARD", value: diff.hard.solved, total: Math.max(diff.hard.total, 1), color: "text-red-400", bg: "bg-red-500" },
-                      ].map((item) => (
-                        <div key={item.label} className="space-y-1.5">
-                          <div className="flex justify-between text-[9px] font-black tracking-widest">
-                            <span className={item.color}>{item.label}</span>
-                            <span className="text-tertiary font-mono">{item.value} <span className="text-black/20 dark:text-white/20">/</span> {item.total === 1 && item.value === 0 ? 0 : item.total}</span>
-                          </div>
-                          <div className="h-1.5 w-full bg-black/[0.03] dark:bg-white/[0.03] border border-black/5 dark:border-white/5 rounded-full overflow-hidden">
-                            <motion.div 
-                              initial={{ width: 0 }} animate={{ width: `${(item.value / item.total) * 100}%` }} transition={{ duration: 1.5, ease: "easeOut", delay: 0.2 }}
-                              className={`h-full ${item.bg} opacity-80`}
-                            />
-                          </div>
-                        </div>
-                      ))}
+                    <div className="scale-90 origin-top">
+                      <MasteryPieChart easy={easy} medium={medium} hard={hard} total={total} solvedPct={solvedPct} />
                     </div>
                   </div>
                 </div>

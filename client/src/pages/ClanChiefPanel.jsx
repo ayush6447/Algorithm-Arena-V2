@@ -111,7 +111,7 @@ const ClanChiefPanel = () => {
             </div>
           ) : (
             <>
-              {activeTab === 'dashboard' && <ChiefDashboardTab clan={chiefQuery.data} />}
+              {activeTab === 'dashboard' && <ChiefDashboardTab clan={chiefQuery.data} onTabChange={setActiveTab} />}
               {activeTab === 'members' && <ChiefMembersTab clan={chiefQuery.data} />}
               {activeTab === 'review' && <ChiefReviewTab clan={chiefQuery.data} />}
             </>

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   FiAward,
   FiSearch,
@@ -18,6 +18,7 @@ import { api } from "../lib/api";
 
 import { useAuth } from "../context/useAuth";
 import MemberHoverCard from "../components/MemberHoverCard";
+import ClanHoverCard from "../components/ClanHoverCard";
 
 const MotionDiv = motion.div;
 const MotionRow = motion.tr;
@@ -25,12 +26,12 @@ const MotionRow = motion.tr;
 const Podium = ({ items, leaderType }) => {
   const podiumSteps = [items[1], items[0], items[2]];
   const colors = [
-    "from-slate-400/80 via-slate-300 to-slate-500/50",
-    "from-yellow-500 via-yellow-200 to-yellow-600/50",
-    "from-orange-600 via-orange-300 to-orange-700/50",
+    "from-slate-400/70 to-transparent",
+    "from-yellow-500/70 to-transparent",
+    "from-orange-600/70 to-transparent",
   ];
   const heights = ["h-32 md:h-44", "h-40 md:h-60", "h-24 md:h-36"];
-  const delays = [0.2, 0, 0.4];
+  const delays = [0.15, 0, 0.3];
 
   if (!items.length) {
     return null;
@@ -47,16 +48,17 @@ const Podium = ({ items, leaderType }) => {
         return (
           <MotionDiv
             key={item._id}
-            initial={{ opacity: 0, y: 40, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ delay: delays[index], duration: 0.6 }}
+            initial={{ opacity: 0, y: 100, scaleY: 0.95 }}
+            animate={{ opacity: 1, y: 0, scaleY: 1 }}
+            exit={{ opacity: 0, y: 120, scaleY: 0.95, transition: { duration: 0.3, ease: "easeIn" } }}
+            transition={{ delay: delays[index], duration: 0.6, ease: "easeOut" }}
             className="relative flex max-w-[120px] flex-1 flex-col items-center md:max-w-[200px]"
           >
             <div className="mb-6 text-center">
               <div
-                className={`mx-auto mb-3 flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border-2 bg-glass-surface shadow-2xl md:h-20 md:w-20 ${
+                className={`mx-auto mb-3 flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border-2 bg-glass-surface shadow-2xl md:h-20 md:w-20 ${
                   isFirst
-                    ? "border-yellow-400/50 shadow-[0_0_20px_rgba(234,179,8,0.3)]"
+                    ? "border-yellow-400/50 "
                     : "border-white/10"
                 }`}
               >
@@ -66,35 +68,42 @@ const Podium = ({ items, leaderType }) => {
                     alt=""
                     className="h-full w-full object-cover"
                   />
+                ) : leaderType === "clans" && item.tag ? (
+                  <span className="text-base font-black text-accent md:text-lg font-mono">
+                    {item.tag.toUpperCase()}
+                  </span>
                 ) : (
                   <span className="text-2xl font-black text-primary md:text-3xl">
-                    {(item.username || item.name || "?")[0]}
+                    {(item.username || item.name || "?")[0].toUpperCase()}
                   </span>
                 )}
               </div>
-              <span className="mb-1 block text-[10px] font-black uppercase tracking-widest text-accent">
-                {isFirst ? "Grandmaster" : index === 0 ? "Legend" : "Elite"}
-              </span>
-              <p className="truncate px-1 text-sm font-bold text-primary md:text-base">
-                {item.username || item.name}
-              </p>
+              {leaderType === "individual" ? (
+                <MemberHoverCard userId={item._id} username={item.username}>
+                  <p className="truncate px-1 text-sm font-bold text-primary md:text-base hover:text-accent transition-colors cursor-pointer">
+                    {item.username || item.name}
+                  </p>
+                </MemberHoverCard>
+              ) : (
+                <ClanHoverCard clanId={item._id}>
+                  <p className="truncate px-1 text-sm font-bold text-primary md:text-base hover:text-accent transition-colors cursor-pointer">
+                    {item.username || item.name}
+                  </p>
+                </ClanHoverCard>
+              )}
               <div className="mt-1 flex items-center justify-center gap-1.5">
                 <FiZap size={10} className="text-accent" />
                 <p className="text-sm font-black tracking-tighter text-secondary md:text-lg">
                   {item.totalPoints.toLocaleString()}
                 </p>
               </div>
-              {leaderType === "clans" && (
-                <p className="mt-1 text-[10px] uppercase tracking-widest text-tertiary">
-                  {item.memberCount ?? 0} members
-                </p>
-              )}
+
             </div>
 
             <div
-              className={`relative flex w-full flex-col items-center justify-start rounded-t-3xl border-t border-white/20 bg-gradient-to-b pt-6 shadow-2xl ${colors[index]} ${heights[index]}`}
+              className={`relative flex w-full flex-col items-center justify-start rounded-t-3xl border-t border-white/20 bg-gradient-to-b pt-6 ${colors[index]} ${heights[index]}`}
             >
-              <span className="select-none text-5xl font-black text-white/20 md:text-8xl">
+              <span className="select-none text-5xl font-black text-white/50 md:text-8xl">
                 {index === 1 ? "1" : index === 0 ? "2" : "3"}
               </span>
               {isFirst && (
@@ -198,9 +207,9 @@ const Leaderboard = () => {
         backUrl="/dashboard"
       />
 
-      <div className="flex flex-col sm:flex-row sm:flex-wrap lg:flex-nowrap items-stretch sm:items-center gap-4 macos-glass p-4">
+      <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
         {/* 1. Entity Type Toggle (Individual vs Clans) */}
-        <div className="segmented inline-flex w-full sm:w-auto">
+        <div className="segmented inline-flex items-stretch w-full sm:w-auto h-11 p-1">
           <button
             type="button"
             className={`segmented-btn flex-1 whitespace-nowrap flex items-center justify-center gap-2 ${leaderType === "individual" ? "active" : ""}`}
@@ -218,10 +227,10 @@ const Leaderboard = () => {
         </div>
 
         {/* 2. Global Time Window Toggle */}
-        <div className="segmented inline-flex w-full sm:w-auto overflow-x-auto">
+        <div className="segmented inline-flex items-stretch w-full sm:w-auto h-11 p-1 overflow-x-auto">
           <button
             type="button"
-            className={`segmented-btn flex-1 whitespace-nowrap ${filters.window === "all" ? "active" : ""}`}
+            className={`segmented-btn flex-1 whitespace-nowrap flex items-center justify-center ${filters.window === "all" ? "active" : ""}`}
             onClick={() =>
               setFilters((p) => ({ ...p, page: 1, window: "all" }))
             }
@@ -230,7 +239,7 @@ const Leaderboard = () => {
           </button>
           <button
             type="button"
-            className={`segmented-btn flex-1 whitespace-nowrap ${filters.window === "30d" ? "active" : ""}`}
+            className={`segmented-btn flex-1 whitespace-nowrap flex items-center justify-center ${filters.window === "30d" ? "active" : ""}`}
             onClick={() =>
               setFilters((p) => ({ ...p, page: 1, window: "30d" }))
             }
@@ -239,7 +248,7 @@ const Leaderboard = () => {
           </button>
           <button
             type="button"
-            className={`segmented-btn flex-1 whitespace-nowrap ${filters.window === "7d" ? "active" : ""}`}
+            className={`segmented-btn flex-1 whitespace-nowrap flex items-center justify-center ${filters.window === "7d" ? "active" : ""}`}
             onClick={() => setFilters((p) => ({ ...p, page: 1, window: "7d" }))}
           >
             Weekly
@@ -247,11 +256,11 @@ const Leaderboard = () => {
         </div>
 
         {/* 3. Search Feature */}
-        <div className="relative flex-1 min-w-[200px] w-full sm:w-auto">
-          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary" />
+        <div className="relative flex-1 min-w-[200px] w-full sm:w-auto h-11">
+          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary z-10" />
           <input
             name="leaderboardSearch"
-            className="field-input pl-9 w-full"
+            className="field-input pl-9 w-full h-full py-0"
             placeholder={
               leaderType === "individual"
                 ? "Search coders..."
@@ -265,7 +274,7 @@ const Leaderboard = () => {
         {/* 4. Results Limit Dropdown */}
         <select
           name="leaderboardLimit"
-          className="field-select px-3 text-xs w-full sm:w-auto"
+          className="field-select px-3 text-xs w-full sm:w-auto h-11 py-0"
           value={filters.limit}
           onChange={(e) =>
             setFilters((prev) => ({
@@ -282,7 +291,9 @@ const Leaderboard = () => {
         </select>
       </div>
 
-      <Podium items={topThree} leaderType={leaderType} />
+      <AnimatePresence mode="wait">
+        <Podium key={leaderType} items={topThree} leaderType={leaderType} />
+      </AnimatePresence>
 
       {myRow && leaderType === "individual" && (
         <MotionDiv
@@ -371,15 +382,19 @@ const Leaderboard = () => {
                         </td>
                         <td className="p-6">
                           <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-glass-surface font-bold text-accent">
+                            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-glass-surface font-bold text-accent">
                               {item.profilePicture ? (
                                 <img
                                   src={item.profilePicture}
                                   alt=""
                                   className="h-full w-full object-cover"
                                 />
+                              ) : leaderType === "clans" && item.tag ? (
+                                <span className="text-xs font-black text-accent font-mono">
+                                  {item.tag.toUpperCase()}
+                                </span>
                               ) : (
-                                (item.username || item.name || "?")[0]
+                                (item.username || item.name || "?")[0].toUpperCase()
                               )}
                             </div>
                             <div>
@@ -394,7 +409,11 @@ const Leaderboard = () => {
                                     </span>
                                   </MemberHoverCard>
                                 ) : (
-                                  <span>{item.name}</span>
+                                  <ClanHoverCard clanId={item._id}>
+                                    <span className="hover:text-accent transition-colors cursor-pointer">
+                                      {item.name}
+                                    </span>
+                                  </ClanHoverCard>
                                 )}
                                 {isMe && (
                                   <span className="rounded bg-accent px-1.5 py-0.5 text-[10px] italic text-white">
@@ -455,7 +474,9 @@ const Leaderboard = () => {
                             </span>
                           </MemberHoverCard>
                         ) : (
-                          <span className="text-lg font-bold">{item.name}</span>
+                          <ClanHoverCard clanId={item._id}>
+                            <span className="text-lg font-bold hover:text-accent transition-colors cursor-pointer">{item.name}</span>
+                          </ClanHoverCard>
                         )}
                       </div>
                       <span className="font-black text-accent">

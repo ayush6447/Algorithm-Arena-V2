@@ -9,15 +9,6 @@ import toast from 'react-hot-toast';
 import Logo from '../components/Logo';
 
 
-const PRESET_AVATARS = [
-  'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop',
-  'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop',
-  'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=400&h=400&fit=crop',
-  'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=400&fit=crop',
-  'https://images.unsplash.com/photo-1628157588553-5eeea00af15c?w=400&h=400&fit=crop',
-  'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=400&h=400&fit=crop',
-];
-
 const Settings = () => {
   const { user, updateUser } = useAuth();
   const fileInputRef = React.useRef(null);
@@ -299,18 +290,18 @@ const Settings = () => {
             {/* Avatar section */}
             <div className="pt-8 pb-4 px-6 flex flex-col items-center text-center">
               <div className="group relative mb-4 inline-block cursor-pointer" onClick={() => setShowAvatarPicker(true)}>
-                <div className="h-24 w-24 rounded-2xl p-0.5 shadow-xl"
+                <div className="h-24 w-24 rounded-full p-0.5 shadow-xl"
                   style={{ background: "linear-gradient(135deg, rgba(var(--accent-rgb),1), rgba(168,85,247,0.9))", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.3)" }}>
                   {preview.profilePicture ? (
-                    <img src={preview.profilePicture} alt="Profile" referrerPolicy="no-referrer" className="h-full w-full rounded-[14px] object-cover" />
+                    <img src={preview.profilePicture} alt="Profile" referrerPolicy="no-referrer" className="h-full w-full rounded-full object-cover" />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center rounded-[14px] bg-[#1a1a1c] text-3xl font-black uppercase text-white">
+                    <div className="flex h-full w-full items-center justify-center rounded-full bg-[#1a1a1c] text-3xl font-black uppercase text-white">
                       {preview.username?.[0] || 'U'}
                     </div>
                   )}
                 </div>
                 <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full border-4 border-[#0f0f14] bg-green-500 shadow-lg" />
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                   <FiEdit2 className="text-white" size={20} />
                 </div>
               </div>
@@ -440,16 +431,6 @@ const Settings = () => {
                 <p className="text-[10px] text-tertiary">PNG or JPG up to 2MB</p>
               </div>
               <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
-            </div>
-
-            <div className="mb-8 grid grid-cols-3 gap-4">
-              {PRESET_AVATARS.map((url, index) => (
-                <button key={index} type="button"
-                  className="aspect-square overflow-hidden rounded-xl border-2 border-transparent transition-all hover:border-accent"
-                  onClick={() => handleAvatarSelect(url)}>
-                  <img src={url} alt={`Avatar ${index + 1}`} className="h-full w-full object-cover" />
-                </button>
-              ))}
             </div>
 
             <div className="flex gap-2">
