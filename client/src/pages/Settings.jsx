@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FiUser, FiMapPin, FiGithub, FiTwitter, FiGlobe, FiSave, FiCpu, FiBookOpen, FiLayers, FiGrid, FiAward, FiCalendar, FiLink, FiZap, FiEdit2, FiLinkedin, FiCheck } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/useAuth';
@@ -11,6 +12,7 @@ import Logo from '../components/Logo';
 
 const Settings = () => {
   const { user, updateUser } = useAuth();
+  const navigate = useNavigate();
   const fileInputRef = React.useRef(null);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [formData, setFormData] = useState({
@@ -96,6 +98,13 @@ const Settings = () => {
   const handleFileUpload = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    
+    // Check file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('File size must be less than 2MB');
+      return;
+    }
+    
     const reader = new FileReader();
     reader.onloadend = () => {
       setFormData((prev) => ({ ...prev, profilePicture: reader.result }));
@@ -111,6 +120,7 @@ const Settings = () => {
       const res = await api.put('/api/auth/update-me', formData);
       updateUser(res.data.data);
       toast.success('Profile updated successfully!');
+      navigate('/profile');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to update profile');
     } finally {
@@ -283,18 +293,18 @@ const Settings = () => {
             {/* Avatar section */}
             <div className="pt-8 pb-4 px-6 flex flex-col items-center text-center">
               <div className="group relative mb-4 inline-block cursor-pointer" onClick={() => setShowAvatarPicker(true)}>
-                <div className="h-24 w-24 rounded-2xl p-0.5 shadow-xl"
+                <div className="h-24 w-24 rounded-full p-0.5 shadow-xl"
                   style={{ background: "linear-gradient(135deg, rgba(var(--accent-rgb),1), rgba(168,85,247,0.9))", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.3)" }}>
                   {preview.profilePicture ? (
-                    <img src={preview.profilePicture} alt="Profile" referrerPolicy="no-referrer" className="h-full w-full rounded-[14px] object-cover" />
+                    <img src={preview.profilePicture} alt="Profile" referrerPolicy="no-referrer" className="h-full w-full rounded-full object-cover" />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center rounded-[14px] bg-[#1a1a1c] text-3xl font-black uppercase text-white">
+                    <div className="flex h-full w-full items-center justify-center rounded-full bg-[#1a1a1c] text-3xl font-black uppercase text-white">
                       {preview.username?.[0] || 'U'}
                     </div>
                   )}
                 </div>
                 <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full border-4 border-[#0f0f14] bg-green-500 shadow-lg" />
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                   <FiEdit2 className="text-white" size={20} />
                 </div>
               </div>

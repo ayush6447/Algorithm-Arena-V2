@@ -59,11 +59,11 @@ const ProfilePopover = ({ user, children, stats }) => {
               {/* Avatar & Basic Info */}
               <div className="px-4 pb-4 -mt-8 relative z-10">
                 <div className="flex justify-between items-end mb-2">
-                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-accent to-purple-600 p-0.5 shadow-lg shadow-accent/20">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-accent to-purple-600 p-0.5 shadow-lg shadow-accent/20">
                     {user.profilePicture ? (
-                      <img src={user.profilePicture} alt="Avatar" referrerPolicy="no-referrer" className="w-full h-full rounded-[10px] object-cover" />
+                      <img src={user.profilePicture} alt="Avatar" referrerPolicy="no-referrer" className="w-full h-full rounded-full object-cover" />
                     ) : (
-                      <div className="w-full h-full rounded-[10px] bg-[#1a1a1c] flex items-center justify-center text-xl text-white font-black uppercase">
+                      <div className="w-full h-full rounded-full bg-[#1a1a1c] flex items-center justify-center text-xl text-white font-black uppercase">
                         {user.username?.[0] || 'U'}
                       </div>
                     )}

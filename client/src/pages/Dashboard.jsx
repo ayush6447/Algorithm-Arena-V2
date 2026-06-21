@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import toast from 'react-hot-toast';
 import {
   FiArrowRight,
   FiZap,
@@ -68,6 +69,11 @@ const Dashboard = () => {
   const [showWarning, setShowWarning] = useState(true);
   useEffect(() => {
     if (user?.status === "Warned") {
+      const warnedToastShown = sessionStorage.getItem("warnedToastShown");
+      if (!warnedToastShown) {
+        toast.error('You have been warned', { icon: '⚠️', duration: 6000 });
+        sessionStorage.setItem("warnedToastShown", "true");
+      }
       const t = setTimeout(() => setShowWarning(false), 20000);
       return () => clearTimeout(t);
     }
@@ -85,6 +91,8 @@ const Dashboard = () => {
     sortDir: "desc",
   });
   const hf = (k, v) => setFilters((p) => ({ ...p, [k]: v, page: 1 }));
+  const [heroIdx, setHeroIdx] = useState(0);
+  const [heroDir, setHeroDir] = useState(1);
 
   /* ── queries ─────────────────────────────── */
   const challengesQ = useQuery({
@@ -138,11 +146,19 @@ const Dashboard = () => {
   const solvedPct = total > 0 ? Math.round((solved / total) * 100) : 0;
 
   const activeSets = useMemo(
-    () => (setsQ.data || []).filter((s) => new Date(s.deadline) > new Date()),
+    () =>
+      (setsQ.data || [])
+        .filter((s) => new Date(s.deadline) > new Date())
+        .sort((a, b) => new Date(a.deadline) - new Date(b.deadline)),
     [setsQ.data],
   );
-  const activeSet = activeSets[0];
-  // const featuredChallenge = activeSet?.questions?.[0] || challenges[0];
+  const clampedIdx = Math.min(heroIdx, Math.max(activeSets.length - 1, 0));
+  const activeSet = activeSets[clampedIdx];
+
+  const goHero = (dir) => {
+    setHeroDir(dir);
+    setHeroIdx((i) => Math.max(0, Math.min(activeSets.length - 1, i + dir)));
+  };
 
   const recentSubs = useMemo(
     () =>
@@ -185,155 +201,158 @@ const Dashboard = () => {
         </p>
       </motion.div>
 
-      {/* ── Hero — Recommended Challenge ────── */}
-      <motion.div {...fd(0.08)}>
+      {/* ── Hero Carousel ────────────────────────── */}
+      <motion.div {...fd(0.08)} className="relative">
+        {/* card shell */}
         <div
-          className="relative  overflow-hidden rounded-2xl p-8 group transition-all duration-250
-               hover:scale-[1.02]
-               hover:shadow-[0_10px_20px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.05)]
-               dark:hover:shadow-[0_0_40px_rgba(var(--accent-rgb),0.25),0_10px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.05)]"
-          style={{
-            border: "1px solid rgba(255,255,255,0.07)",
-          }}
+          className="relative overflow-hidden rounded-2xl group transition-all duration-250 border border-black/[0.12] dark:border-white/[0.07]
+          shadow-[0_5px_10px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.05)]
+          dark:shadow-[0_5px_10px_rgba(var(--accent-rgb),0.1),inset_0_1px_0_rgba(255,255,255,0.05)]"
         >
-          {/* glow orbs */}
-          <div
-            className="absolute -top-20 -left-10 w-80 h-80 rounded-full blur-[120px] pointer-events-none opacity-20"
-            style={{
-              background:
-                "radial-gradient(circle, rgba(var(--accent-rgb),1), transparent 70%)",
-            }}
-          />
-          <div
-            className="absolute -bottom-16 left-40 w-60 h-60 rounded-full blur-[100px] pointer-events-none opacity-15"
-            style={{
-              background:
-                "radial-gradient(circle, rgba(168,85,247,1), transparent 70%)",
-            }}
-          />
+          {/* glow orbs — static behind slides */}
+          <div className="absolute -top-20 -left-10 w-80 h-80 rounded-full blur-[120px] pointer-events-none opacity-20"
+            style={{ background: "radial-gradient(circle, rgba(var(--accent-rgb),1), transparent 70%)" }} />
+          <div className="absolute -bottom-16 left-40 w-60 h-60 rounded-full blur-[100px] pointer-events-none opacity-15"
+            style={{ background: "radial-gradient(circle, rgba(168,85,247,1), transparent 70%)" }} />
 
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6 ">
-            <div className="flex-1 min-w-0">
-              <span className="inline-block text-[10px] font-black uppercase tracking-[0.35em] text-accent mb-4">
-                Recommended for you
-              </span>
-              <h1 className="text-4xl md:text-5xl font-black text:black leading-[1.1] dark:text-white mb-3 font-h1">
-                {activeSet ? (
-                  <>
-                    {activeSet.title.split(" ").slice(0, -1).join(" ")}{" "}
-                    <span
-                      style={{
-                        background:
-                          "linear-gradient(135deg, rgb(var(--accent-rgb)), rgba(168,85,247,1))",
-                        WebkitBackgroundClip: "text",
-                        WebkitTextFillColor: "transparent",
-                      }}
-                    >
-                      {activeSet.title.split(" ").slice(-1)[0]}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    Mastering Dynamic{" "}
-                    <span
-                      style={{
-                        background:
-                          "linear-gradient(135deg, rgb(var(--accent-rgb)), rgba(168,85,247,1))",
-                        WebkitBackgroundClip: "text",
-                        WebkitTextFillColor: "transparent",
-                      }}
-                    >
-                      Programming
-                    </span>
-                  </>
-                )}
-              </h1>
-              <p className="text-secondary text-sm leading-relaxed mb-6 max-w-md">
-                {activeSet
-                  ? `Target Level: ${activeSet.targetLevel} • Due ${new Date(activeSet.deadline).toLocaleDateString()}`
-                  : "Push your limits with this week's elite challenge. Solve complex optimizations and climb the global leaderboards."}
-              </p>
-              <div className="flex flex-wrap items-center gap-3">
-                <Link
-                  to={
-                    activeSet ? `/missions?setId=${activeSet._id}` : "/missions"
-                  }
-                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-black text-white transition-all hover:opacity-90 active:scale-95"
-                  style={{
-                    background:
-                      "linear-gradient(135deg, rgb(var(--accent-rgb)), rgba(168,85,247,0.9))",
-                    boxShadow: "0 4px 20px rgba(var(--accent-rgb),0.4)",
-                  }}
-                >
-                  Enter Arena
-                </Link>
-                <div className="inline-flex items-center gap-1.5 text-xs font-bold text-tertiary">
-                  <FiZap className="text-yellow-400" size={13} />+
-                  {activeSet?.questions?.reduce(
-                    (a, q) => a + (q.points || 0),
-                    0,
-                  ) || 50}{" "}
-                  Bonus XP
-                </div>
-              </div>
-            </div>
-
-            {/* watermark icon */}
-            <div className="clip md:flex items-center justify-center flex-shrink-0 opacity-[0.1] group-hover:opacity-[0.5] transition-all duration-700 group-hover:rotate-6">
-              <FiCpu size={200} className="text-accent overflow-hidden" />
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* ── Other Active Question Sets ────────── */}
-      {activeSets.length > 1 && (
-        <motion.div {...fd(0.1)}>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-black text-primary font-h2">
-              Active Question Sets
-            </h2>
-            <span className="text-xs text-tertiary font-bold">
-              {activeSets.length} sets active
-            </span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {activeSets.map((set, i) => (
-              <Link
-                key={set._id}
-                to={`/missions?setId=${set._id}`}
-                className="group block"
+          {/* slides */}
+          <div className="relative overflow-hidden">
+            <AnimatePresence mode="wait" initial={false} custom={heroDir}>
+              <motion.div
+                key={clampedIdx}
+                custom={heroDir}
+                variants={{
+                  enter: (dir) => ({ x: dir > 0 ? 60 : -60, opacity: 0 }),
+                  center: { x: 0, opacity: 1 },
+                  exit: (dir) => ({ x: dir > 0 ? -60 : 60, opacity: 0 }),
+                }}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.28, ease: "easeInOut" }}
+                className="p-8"
               >
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="p-4 rounded-xl border border-black/20 dark:border-white/10 hover:border-accent/40 transition-all
-                    hover:shadow-[0_0_20px_rgba(var(--accent-rgb),0.15)]"
+                <div className="relative z-30 flex flex-col md:flex-row md:items-center gap-6">
+                  <div className="flex-1 min-w-0">
+                    {/* deadline badge */}
+                    {activeSet && (
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="inline-block text-[10px] font-black uppercase tracking-[0.35em] text-accent">
+                          {activeSets.length > 1
+                            ? `Challenge ${clampedIdx + 1} of ${activeSets.length}`
+                            : "This Week's Challenge"}
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
+                          <FiClock size={9} /> Due {new Date(activeSet.deadline).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
+                        </span>
+                      </div>
+                    )}
+                    {!activeSet && (
+                      <span className="inline-block text-[10px] font-black uppercase tracking-[0.35em] text-accent mb-4">
+                        This Week's Challenge
+                      </span>
+                    )}
+
+                    <h1 className="text-4xl md:text-5xl font-black leading-[1.1] dark:text-white text-black mb-3 font-h1">
+                      {activeSet ? (
+                        <>
+                          {activeSet.title.split(" ").slice(0, -1).join(" ")}{" "}
+                          <span style={{ background: "linear-gradient(135deg, rgb(var(--accent-rgb)), rgba(168,85,247,1))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                            {activeSet.title.split(" ").slice(-1)[0]}
+                          </span>
+                        </>
+                      ) : (
+                        <>Mastering Dynamic{" "}<span style={{ background: "linear-gradient(135deg, rgb(var(--accent-rgb)), rgba(168,85,247,1))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Programming</span></>
+                      )}
+                    </h1>
+
+                    <p className="text-secondary text-sm leading-relaxed mb-6 max-w-md">
+                      {activeSet
+                        ? `Target Level: ${activeSet.targetLevel} · ${activeSet.questions?.length || 0} questions `
+                        : "Push your limits with this week's elite challenge. Solve complex optimizations and climb the global leaderboards."}
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-3 z-10">
+                      <Link
+                        to={activeSet ? `/missions?setId=${activeSet._id}` : "/missions"}
+                        className="inline-flex items-center gap-2 px-6 py-2.5 z-30 rounded-xl text-sm font-black text-white transition-all hover:opacity-90 active:scale-95"
+                        style={{ background: "linear-gradient(135deg, rgb(var(--accent-rgb)), rgba(168,85,247,0.9))", boxShadow: "0 4px 20px rgba(var(--accent-rgb),0.4)" }}
+                      >
+                        Enter Arena <FiArrowRight size={14} />
+                      </Link>
+                      <div className="inline-flex items-center gap-1.5 text-xs font-bold text-tertiary">
+                        <FiZap className="text-yellow-400" size={13} />+
+                        {activeSet?.questions?.reduce((a, q) => a + (q.points || 0), 0) || 50} XP
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* watermark */}
+                  <div className="clip md:flex items-center justify-center flex-shrink-0 opacity-[0.08] group-hover:opacity-[0.4] transition-all duration-700 group-hover:rotate-6">
+                    <FiCpu size={180} className="text-accent" />
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* edge-click navigation zones — only when multiple sets */}
+          {activeSets.length > 1 && (
+            <>
+              {/* LEFT zone */}
+              <div
+                onClick={() => clampedIdx > 0 && goHero(-1)}
+                className={`absolute inset-y-0 left-0 w-1/4 z-20 flex items-center justify-start group/left transition-all duration-300
+                  ${clampedIdx === 0 ? 'pointer-events-none' : 'cursor-pointer'}`}
+              >
+                <div className="absolute inset-0 opacity-0 group-hover/left:opacity-100 transition-opacity duration-300 rounded-l-2xl"
+                  style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.35) 0%, transparent 100%)' }} />
+                <svg
+                  viewBox="0 0 24 24" fill="none" strokeWidth="2" stroke="currentColor"
+                  className={`relative ml-3 w-5 h-5 transition-all duration-300
+                    ${clampedIdx === 0 ? 'text-white/0' : 'text-black/35 dark:text-white/35 group-hover/left:text-accent group-hover/left:-translate-x-0.5'}`}
                 >
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <h2 className="text-sm font-bold text-primary group-hover:text-accent transition-colors line-clamp-1 font-h2">
-                      {set.title}
-                    </h2>
-                    <span className="text-[9px] font-black text-accent bg-accent/10 px-2 py-0.5 rounded-full flex-shrink-0">
-                      Week {set.weekNumber}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 text-[10px] text-tertiary font-bold">
-                    <span>{set.questions?.length || 0} questions</span>
-                    <span className="text-white/10">•</span>
-                    <span>Due {new Date(set.deadline).toLocaleDateString()}</span>
-                    <span className="text-white/10">•</span>
-                    <span className="text-accent">
-                      {set.questions?.reduce((a, q) => a + (q.points || 0), 0) || 0} XP
-                    </span>
-                  </div>
-                </motion.div>
-              </Link>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </div>
+
+              {/* RIGHT zone */}
+              <div
+                onClick={() => clampedIdx < activeSets.length - 1 && goHero(1)}
+                className={`absolute inset-y-0 right-0 w-1/4 z-20 flex items-center justify-end group/right transition-all duration-300
+                  ${clampedIdx === activeSets.length - 1 ? 'pointer-events-none' : 'cursor-pointer'}`}
+              >
+                <div className="absolute inset-0 opacity-0 group-hover/right:opacity-100 transition-opacity duration-300 rounded-r-2xl"
+                  style={{ background: 'linear-gradient(to left, rgba(0,0,0,0.35) 0%, transparent 100%)' }} />
+                <svg
+                  viewBox="0 0 24 24" fill="none" strokeWidth="2" stroke="currentColor"
+                  className={`relative mr-3 w-5 h-5 transition-all duration-300
+                    ${clampedIdx === activeSets.length - 1 ? 'text-white/0' : 'text-black/35 dark:text-white/35 group-hover/right:text-accent group-hover/right:translate-x-0.5'}`}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* dot indicators */}
+        {activeSets.length > 1 && (
+          <div className="flex items-center justify-center gap-1.5 mt-3">
+            {activeSets.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => { setHeroDir(i > clampedIdx ? 1 : -1); setHeroIdx(i); }}
+                className={`rounded-full transition-all duration-300 ${
+                  i === clampedIdx
+                    ? "w-5 h-1.5 bg-accent"
+                    : "w-1.5 h-1.5 bg-white/20 hover:bg-white/40"
+                }`}
+              />
             ))}
           </div>
-        </motion.div>
-      )}
+        )}
+      </motion.div>
 
       {/* ── Stat bar ────────────────────────── */}
       <motion.div {...fd(0.12)}>
@@ -370,7 +389,7 @@ const Dashboard = () => {
           ].map(({ icon: Icon, label, value, delta, color }) => (
             <div
               key={label}
-              className="flex items-center gap-3 p-4 rounded-xl border border-black/[0.1] dark:border-white/[0.11] transition-all hover:scale-[1.02]
+              className="flex items-center gap-3 p-4 rounded-xl border border-black/[0.15] dark:border-white/[0.11] transition-all hover:scale-[1.02]
               hover:shadow-[0_10px_20px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.05)]
               dark:hover:shadow-[0_0_40px_rgba(var(--accent-rgb),0.25),0_10px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.05)]"
             >
@@ -421,7 +440,7 @@ const Dashboard = () => {
                 onChange={(e) => hf("search", e.target.value)}
               />
             </div>
-            <div className="flex items-center gap-1 bg-white/[0.03] border border-white/[0.06] rounded-xl px-3 h-8">
+            <div className="flex items-center gap-1 bg-white/[0.03] border border-black/[0.12] dark:border-white/[0.06] rounded-xl px-3 h-8">
               <FiFilter size={10} className="text-tertiary" />
               <select
                 className="bg-transparent text-xs text-secondary font-semibold outline-none"
@@ -446,7 +465,7 @@ const Dashboard = () => {
                     : v === "Hard"
                       ? "bg-red-500/15 border-red-500/40 text-red-400"
                       : "bg-accent/15 border-accent/40 text-accent"
-                : "bg-white/[0.03] border-white/[0.07] text-tertiary hover:text-secondary hover:border-white/20";
+                : "bg-white/[0.03] border-black/[0.12] dark:border-white/[0.07] text-tertiary hover:text-secondary hover:border-white/20";
               return (
                 <button
                   key={v}
@@ -523,7 +542,7 @@ const Dashboard = () => {
                             ch.tags.slice(0, 3).map((tag, idx) => (
                               <span
                                 key={idx}
-                                className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-white/5 text-secondary border border-white/5"
+                                className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-white/5 text-secondary border border-black/[0.1] dark:border-white/5"
                               >
                                 {tag}
                               </span>
@@ -533,7 +552,7 @@ const Dashboard = () => {
                             ch.category.split(',').slice(0, 3).map((cat, idx) => (
                               <span
                                 key={`cat-${idx}`}
-                                className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-white/5 text-secondary border border-white/5"
+                                className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-white/5 text-secondary border border-black/[0.1] dark:border-white/5"
                               >
                                 {cat.trim()}
                               </span>
@@ -554,7 +573,7 @@ const Dashboard = () => {
             <FiActivity className="text-accent" size={16} /> Recent Activity
           </h2>
 
-          <div className="rounded-2xl border border-white/[0.06] overflow-hidden">
+          <div className="rounded-2xl border border-black/[0.12] dark:border-white/[0.06] overflow-hidden">
             {recentSubs.length === 0 ? (
               <div className="p-8 text-center">
                 <FiCpu size={32} className="text-white/10 mx-auto mb-3" />

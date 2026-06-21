@@ -27,8 +27,10 @@ import SkeletonCard from '../components/SkeletonCard';
 import EmptyState from '../components/EmptyState';
 import ConfirmDialog from '../components/ConfirmDialog';
 import MemberHoverCard from '../components/MemberHoverCard';
+import ClanHoverCard from '../components/ClanHoverCard';
 import { api } from '../lib/api';
 import { useAuth } from '../context/useAuth';
+import { useSocket } from '../hooks/useSocket';
 
 
 
@@ -131,7 +133,9 @@ const ClanDashboard = ({ clan, userId, onLeave, readOnly, onBack }) => {
               </div>
             </h3>
             <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 gap-2" : "flex flex-col gap-2"}>
-              {members.map((member, i) => {
+              {[...members]
+                .sort((a, b) => (b.points || 0) - (a.points || 0))
+                .map((member, i) => {
                 const isMemberChief = clan.chief?._id === member._id;
                 return (
                   <motion.div
@@ -142,8 +146,12 @@ const ClanDashboard = ({ clan, userId, onLeave, readOnly, onBack }) => {
                     className="flex items-center justify-between p-4 rounded-xl border border-black/20  dark:border-white/20 hover:border-accent/30 transition-all group"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-glass-surface flex items-center justify-center font-bold text-accent">
-                        {(member.username?.[0] || member.email?.[0] || 'U').toUpperCase()}
+                      <div className="w-10 h-10 rounded-full bg-glass-surface flex items-center justify-center font-bold text-accent overflow-hidden">
+                        {member.profilePicture ? (
+                          <img src={member.profilePicture} referrerPolicy="no-referrer" alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          (member.username?.[0] || member.email?.[0] || 'U').toUpperCase()
+                        )}
                       </div>
                       <div>
                         <p className="font-bold text-primary flex items-center gap-2">
@@ -164,6 +172,9 @@ const ClanDashboard = ({ clan, userId, onLeave, readOnly, onBack }) => {
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] text-accent/80 font-bold flex items-center gap-1 bg-accent/10 px-2 py-1 rounded-lg">
                         <FiStar size={10} /> {(member.points || 0).toLocaleString()} XP
+                      </span>
+                      <span className="text-[10px] text-orange-400 font-bold flex items-center gap-1 bg-orange-500/10 px-2 py-1 rounded-lg" title={`${member.streak || 0} Day Streak`}>
+                        🔥 {member.streak || 0}
                       </span>
                       {isMemberChief ? (
                         <span className="text-[10px] bg-yellow-500/15 text-yellow-400 px-2 py-1 rounded-lg font-bold">
@@ -261,13 +272,15 @@ const ClanBrowser = ({ clans, loading, userId, onApply, onViewClan, userHasClan,
                 <Card className={`h-full group hover:border-accent/40 transition-all ${viewMode === 'list' ? 'flex flex-col sm:flex-row sm:items-center gap-4 py-3 px-5' : 'flex flex-col'}`}>
                   <div className={`flex items-start justify-between ${viewMode === 'list' ? 'shrink-0 mb-0 pr-4 min-w-[200px]' : 'mb-3'}`}>
                     <div>
-                      <h3 className={`font-bold text-lg text-primary group-hover:text-accent transition-colors ${viewMode === 'list' ? 'whitespace-nowrap' : 'truncate'}`}>
-                        {clan.name}
-                      </h3>
+                      <ClanHoverCard clanId={clan._id}>
+                        <h3 className={`font-bold text-lg text-primary group-hover:text-accent transition-colors cursor-pointer ${viewMode === 'list' ? 'whitespace-nowrap' : 'truncate'}`}>
+                          {clan.name}
+                        </h3>
+                      </ClanHoverCard>
                       <span className="text-xs text-accent font-mono whitespace-nowrap">[{clan.tag}]</span>
                     </div>
                     {viewMode === 'grid' && (
-                      <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
                         <FiUsers className="text-accent" size={18} />
                       </div>
                     )}
@@ -337,6 +350,11 @@ const Clans = () => {
   const [leaving, setLeaving] = useState(false);
   const [viewingOtherClan, setViewingOtherClan] = useState(null);
   const [isBrowsingOthers, setIsBrowsingOthers] = useState(false);
+
+  useSocket("leaderboard_update", () => {
+    queryClient.invalidateQueries({ queryKey: ['my-clan'] });
+    queryClient.invalidateQueries({ queryKey: ['clans-list'] });
+  });
 
   const myClanQuery = useQuery({
     queryKey: ['my-clan'],

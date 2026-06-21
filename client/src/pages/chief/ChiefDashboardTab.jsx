@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiUsers, FiActivity, FiCheck, FiX, FiAward, FiAlertTriangle, FiFileText, FiMessageSquare, FiShield, FiRefreshCw } from 'react-icons/fi';
+import { FiUsers, FiActivity, FiCheck, FiX, FiAward, FiAlertTriangle, FiFileText, FiShield, FiRefreshCw } from 'react-icons/fi';
 import BaseCard from '../../components/BaseCard';
 import { api } from '../../lib/api';
 import { useAuth } from '../../context/useAuth';
@@ -41,7 +42,8 @@ const StatCard = ({ title, value, icon: Icon, colorClass, subtitle }) => (
   </BaseCard>
 );
 
-const ChiefDashboardTab = ({ clan }) => {
+const ChiefDashboardTab = ({ clan, onTabChange }) => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [warningModal, setWarningModal] = useState({ open: false, user: null, message: '' });
@@ -78,7 +80,7 @@ const ChiefDashboardTab = ({ clan }) => {
       return res.data;
     },
     onSuccess: () => {
-      toast.success('Warning sent and user flagged.');
+      toast.success('Yes, this member is warned now');
       setWarningModal({ open: false, user: null, message: '' });
       queryClient.invalidateQueries({ queryKey: ['chief-clan-info'] });
     },
@@ -193,17 +195,19 @@ const ChiefDashboardTab = ({ clan }) => {
             </div>
           </BaseCard>
 
-          {/* Quick Actions */}
           <BaseCard className="p-5">
             <h2 className="text-sm font-bold text-secondary uppercase tracking-widest mb-4">Quick Actions</h2>
             <div className="grid grid-cols-2 gap-3">
-              <button className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/10 hover:border-purple-500/30 transition-all text-xs font-bold text-primary">
+              <button
+                onClick={() => onTabChange?.('review')}
+                className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/10 hover:border-purple-500/30 transition-all text-xs font-bold text-primary"
+              >
                 <FiFileText size={18} className="text-purple-400" /> Review Code
               </button>
-              <button className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/10 hover:border-blue-500/30 transition-all text-xs font-bold text-primary">
-                <FiMessageSquare size={18} className="text-blue-400" /> Clan Chat
-              </button>
-              <button className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/10 hover:border-yellow-500/30 transition-all text-xs font-bold text-primary">
+              <button
+                onClick={() => navigate('/leaderboard')}
+                className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/10 hover:border-yellow-500/30 transition-all text-xs font-bold text-primary"
+              >
                 <FiAward size={18} className="text-yellow-400" /> Leaderboard
               </button>
               <button
@@ -214,7 +218,7 @@ const ChiefDashboardTab = ({ clan }) => {
                   }
                 }}
                 disabled={!canArchive || archiveMutation.isPending}
-                className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/10 hover:border-red-500/30 transition-all text-xs font-bold text-primary disabled:opacity-60"
+                className="col-span-2 flex flex-col items-center gap-2 p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/10 hover:border-red-500/30 transition-all text-xs font-bold text-primary disabled:opacity-60"
               >
                 {isArchived ? <FiRefreshCw size={18} className="text-amber-400" /> : <FiAlertTriangle size={18} className="text-red-400" />}
                 {isArchived ? 'Archived' : archiveMutation.isPending ? 'Archiving...' : 'Archive Clan'}

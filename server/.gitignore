@@ -31,3 +31,5 @@ yarn-error.log*
 *.sln
 *.sw?
 .vscode/
+
+firebase-service-account.json

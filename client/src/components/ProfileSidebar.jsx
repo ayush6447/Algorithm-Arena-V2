@@ -10,6 +10,7 @@ import {
 import toast from "react-hot-toast";
 import Logo from "./Logo";
 import { useAuth } from "../context/useAuth";
+import ClanHoverCard from "./ClanHoverCard";
 
 /* ── Rarity configs ─────────────────────────────────────── */
 const RARITY = {
@@ -112,7 +113,7 @@ const ProfileSidebar = ({ user, summary, profile, badges }) => {
   const rank = profile?.rank ?? "—";
   const roleName = user?.role === "admin" ? "Admin"
     : user?.role === "clan-chief" ? "Clan Chief"
-    : "Member";
+      : "Member";
 
   const { user: authUser } = useAuth();
   const isOwnProfile = authUser?.username === user?.username;
@@ -302,17 +303,23 @@ const ProfileSidebar = ({ user, summary, profile, badges }) => {
           <div className="h-px bg-black/[0.08] dark:bg-white/[0.08]" />
 
           {/* Clan */}
-          {user?.clan && (
-            <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06]">
-              <div className="w-7 h-7 rounded-lg bg-blue-500/15 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
-                <FiUsers size={12} className="text-blue-600 dark:text-blue-400" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[9px] text-tertiary uppercase tracking-widest font-black">Clan</p>
-                <p className="text-sm font-bold text-primary truncate">{user.clan?.name || user.clan}</p>
-              </div>
-            </div>
-          )}
+          {user?.clan && (() => {
+            const clanId = user.clan?._id || user.clan;
+            const clanName = user.clan?.name || user.clan;
+            return (
+              <ClanHoverCard clanId={clanId} className="w-full">
+                <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06] hover:border-accent/40 transition-all w-full text-left">
+                  <div className="w-7 h-7 rounded-lg bg-blue-500/15 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
+                    <FiUsers size={12} className="text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[9px] text-tertiary uppercase tracking-widest font-black">Clan</p>
+                    <p className="text-sm font-bold text-primary truncate hover:text-accent transition-colors">{clanName}</p>
+                  </div>
+                </div>
+              </ClanHoverCard>
+            );
+          })()}
 
           {/* Social links — all clickable */}
           {(user?.github || user?.twitter || user?.linkedin || user?.website) && (
@@ -568,8 +575,8 @@ const ProfileSidebar = ({ user, summary, profile, badges }) => {
                       key={tab.id}
                       onClick={() => setStatusFilter(tab.id)}
                       className={`px-3.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${statusFilter === tab.id
-                          ? "bg-accent text-white shadow-md shadow-accent/20"
-                          : "text-slate-400 hover:text-white"
+                        ? "bg-accent text-white shadow-md shadow-accent/20"
+                        : "text-slate-400 hover:text-white"
                         }`}
                     >
                       {tab.label}

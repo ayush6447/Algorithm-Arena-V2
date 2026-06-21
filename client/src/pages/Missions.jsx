@@ -261,85 +261,84 @@ const Missions = () => {
       <PageHeader
         title={activeSet ? activeSet.title : "All Missions"}
         subtitle={activeSet
-          ? `Week ${activeSet.weekNumber} • Target: ${activeSet.targetLevel} • Due ${new Date(activeSet.deadline).toLocaleDateString()}`
+          ? "Complete this week's curated set of challenges."
           : "Browse all available challenges, filter by difficulty, and push your limits."
         }
         showBack={true}
         backUrl="/dashboard"
+        actions={activeSet && (
+          <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm font-bold md:mb-1">
+            <span className="inline-flex items-center gap-1 px-3 py-1 font-h2 rounded-full bg-accent/10 text-accent">
+              Week {activeSet.weekNumber}
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 font-h2 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+              <FiTarget size={12} /> Target: {activeSet.targetLevel}
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 font-h2 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
+              <FiClock size={12} /> Due {new Date(activeSet.deadline).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
+            </span>
+          </div>
+        )}
       />
 
       {/* Question Set Filter Banner */}
-      {activeSet && (
-        <div className="flex items-center gap-3 p-4 rounded-xl border border-accent/30 bg-accent/5">
-          <FiTarget className="text-accent flex-shrink-0" size={18} />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-primary">
-              Viewing Question Set: <span className="text-accent">{activeSet.title}</span>
-            </p>
-            <p className="text-[11px] text-secondary mt-0.5 flex items-center gap-2">
-              <span>{activeSet.questions?.length || 0} questions</span>
-              <span className="text-white/20">•</span>
-              <FiClock size={10} className="text-orange-400" />
-              <span>Due {new Date(activeSet.deadline).toLocaleDateString()}</span>
-            </p>
-          </div>
-          <button
-            onClick={clearSetFilter}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-secondary border border-white/10 hover:text-primary hover:border-white/20 hover:bg-white/5 transition-all"
-          >
-            <FiX size={12} />
-            Show All Missions
-          </button>
-        </div>
-      )}
+
 
       {/* Filter Bar */}
-      <div className="macos-glass p-3 sm:p-4 grid grid-cols-1 md:grid-cols-6 gap-3 text-xs sm:text-base">
+      <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
         <input
-          className="field-input md:col-span-2"
+          className="field-input w-full sm:w-64 h-11 py-0"
           placeholder="Search title or description"
           value={filters.search}
           onChange={(e) => handleFilterChange("search", e.target.value)}
         />
         <input
-          className="field-input md:col-span-1"
+          className="field-input w-full sm:w-48 h-11 py-0"
           placeholder="Category or Tag"
           value={filters.category}
           onChange={(e) => handleFilterChange("category", e.target.value)}
         />
 
-        <div className="flex gap-1 md:gap-2 md:grid md:grid-cols-3 md:col-span-3 items-center text-xs sm:text-base">
-          <select
-            className="field-select flex-[1] md:w-full"
-            value={filters.limit}
-            onChange={(e) => handleFilterChange("limit", Number(e.target.value))}
-          >
-            <option value={6}>6 / page</option>
-            <option value={12}>12 / page</option>
-            <option value={24}>24 / page</option>
-          </select>
+        <select
+          className="field-select px-3 text-xs w-full sm:w-auto h-11 py-0"
+          value={filters.limit}
+          onChange={(e) => handleFilterChange("limit", Number(e.target.value))}
+        >
+          <option value={6}>6 / page</option>
+          <option value={12}>12 / page</option>
+          <option value={24}>24 / page</option>
+        </select>
 
-          <select
-            className="field-select flex-1 min-w-[70px] md:w-full px-3 py-2 sm:px-3 sm:py-3"
-            value={filters.sortBy}
-            onChange={(e) => handleFilterChange("sortBy", e.target.value)}
-          >
-            <option value="createdAt">Date (Newest)</option>
-            <option value="points">XP Points</option>
-            <option value="difficulty">Difficulty</option>
-            <option value="title">Title</option>
-          </select>
+        <select
+          className="field-select px-3 text-xs w-full sm:w-auto h-11 py-0"
+          value={filters.sortBy}
+          onChange={(e) => handleFilterChange("sortBy", e.target.value)}
+        >
+          <option value="createdAt">Date (Newest)</option>
+          <option value="points">XP Points</option>
+          <option value="difficulty">Difficulty</option>
+          <option value="title">Title</option>
+        </select>
 
-          <select
-            className="field-select flex-1 min-w-[70px] md:w-full px-3 py-2 sm:px-3 sm:py-3"
-            value={filters.grouping}
-            onChange={(e) => handleFilterChange("grouping", e.target.value)}
+        <select
+          className="field-select px-3 text-xs w-full sm:w-auto h-11 py-0"
+          value={filters.grouping}
+          onChange={(e) => handleFilterChange("grouping", e.target.value)}
+        >
+          <option value="none">No Grouping</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+        {activeSet && (
+          <button
+            type="button"
+            onClick={clearSetFilter}
+            className="flex items-center justify-center gap-2 px-4 h-11 rounded-md text-xs font-black uppercase tracking-wider text-amber-400 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 hover:text-amber-300 transition-all duration-200"
           >
-            <option value="none">No Grouping</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-          </select>
-        </div>
+            <FiX size={14} />
+            Show All Missions
+          </button>
+        )}
       </div>
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 w-full">
         <div className="flex flex-col sm:flex-row gap-4">
