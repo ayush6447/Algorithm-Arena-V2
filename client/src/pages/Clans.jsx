@@ -27,6 +27,7 @@ import SkeletonCard from '../components/SkeletonCard';
 import EmptyState from '../components/EmptyState';
 import ConfirmDialog from '../components/ConfirmDialog';
 import MemberHoverCard from '../components/MemberHoverCard';
+import ClanHoverCard from '../components/ClanHoverCard';
 import { api } from '../lib/api';
 import { useAuth } from '../context/useAuth';
 
@@ -142,7 +143,7 @@ const ClanDashboard = ({ clan, userId, onLeave, readOnly, onBack }) => {
                     className="flex items-center justify-between p-4 rounded-xl border border-black/20  dark:border-white/20 hover:border-accent/30 transition-all group"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-glass-surface flex items-center justify-center font-bold text-accent overflow-hidden">
+                      <div className="w-10 h-10 rounded-full bg-glass-surface flex items-center justify-center font-bold text-accent overflow-hidden">
                         {member.profilePicture ? (
                           <img src={member.profilePicture} referrerPolicy="no-referrer" alt="" className="w-full h-full object-cover" />
                         ) : (
@@ -265,13 +266,15 @@ const ClanBrowser = ({ clans, loading, userId, onApply, onViewClan, userHasClan,
                 <Card className={`h-full group hover:border-accent/40 transition-all ${viewMode === 'list' ? 'flex flex-col sm:flex-row sm:items-center gap-4 py-3 px-5' : 'flex flex-col'}`}>
                   <div className={`flex items-start justify-between ${viewMode === 'list' ? 'shrink-0 mb-0 pr-4 min-w-[200px]' : 'mb-3'}`}>
                     <div>
-                      <h3 className={`font-bold text-lg text-primary group-hover:text-accent transition-colors ${viewMode === 'list' ? 'whitespace-nowrap' : 'truncate'}`}>
-                        {clan.name}
-                      </h3>
+                      <ClanHoverCard clanId={clan._id}>
+                        <h3 className={`font-bold text-lg text-primary group-hover:text-accent transition-colors cursor-pointer ${viewMode === 'list' ? 'whitespace-nowrap' : 'truncate'}`}>
+                          {clan.name}
+                        </h3>
+                      </ClanHoverCard>
                       <span className="text-xs text-accent font-mono whitespace-nowrap">[{clan.tag}]</span>
                     </div>
                     {viewMode === 'grid' && (
-                      <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
                         <FiUsers className="text-accent" size={18} />
                       </div>
                     )}

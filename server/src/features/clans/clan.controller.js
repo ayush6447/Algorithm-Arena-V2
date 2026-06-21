@@ -334,8 +334,7 @@ const getClanLeaderboard = async (req, res, next) => {
       };
     });
 
-    // Sort by totalPoints descending, assign ranks
-    enriched.sort((a, b) => b.totalPoints - a.totalPoints || b.solvedCount - a.solvedCount);
+    enriched.sort((a, b) => b.totalPoints - a.totalPoints || b.solvedCount - a.solvedCount || String(a._id).localeCompare(String(b._id)));
     enriched.forEach((c, i) => { c.rank = i + 1; });
 
     return sendSuccess(res, { data: enriched });

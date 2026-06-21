@@ -9,6 +9,7 @@ import {
 
 import { api } from "../lib/api";
 import MasteryPieChart from "./MasteryPieChart";
+import ClanHoverCard from "./ClanHoverCard";
 
 
 
@@ -86,7 +87,7 @@ const IdentityHoverCard = ({ userId, username, position }) => {
                 <div className="flex flex-col md:flex-row items-center md:items-start gap-6 mb-8">
                   {/* Avatar */}
                   <div className="relative group shrink-0">
-                    <div className="w-24 h-24 md:w-28 md:h-28 rounded-[1.5rem] bg-black/[0.05] dark:bg-black border-2 border-accent/20 flex items-center justify-center text-4xl font-black text-primary dark:text-white relative overflow-hidden">
+                    <div className="w-24 h-24 md:w-28 md:h-28 rounded-full bg-black/[0.05] dark:bg-black border-2 border-accent/20 flex items-center justify-center text-4xl font-black text-primary dark:text-white relative overflow-hidden">
                       <div className="absolute inset-0 bg-gradient-to-br from-accent/10 to-transparent opacity-50" />
                       {p.profilePicture ? (
                         <img src={p.profilePicture} referrerPolicy="no-referrer" className="relative z-10 w-full h-full object-cover" alt="" />
@@ -109,10 +110,12 @@ const IdentityHoverCard = ({ userId, username, position }) => {
                         {p.role === "admin" ? "ADMIN" : p.role === "chief" ? "CHIEF" : "CODER"}
                       </div>
                       {p.clan && (
-                        <div className="px-3 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-[9px] font-black uppercase tracking-widest text-blue-400 flex items-center gap-1.5">
-                          <FiActivity size={10} />
-                          {p.clan.name || "MEMBER"}
-                        </div>
+                        <ClanHoverCard clanId={p.clan._id || p.clan}>
+                          <div className="px-3 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-[9px] font-black uppercase tracking-widest text-blue-400 flex items-center gap-1.5 hover:border-accent/40 transition-all cursor-pointer">
+                            <FiActivity size={10} />
+                            {p.clan.name || "MEMBER"}
+                          </div>
+                        </ClanHoverCard>
                       )}
                     </div>
                   </div>

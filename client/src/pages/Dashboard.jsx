@@ -191,10 +191,9 @@ const Dashboard = () => {
       <motion.div {...fd(0.08)} className="relative">
         {/* card shell */}
         <div
-          className="relative overflow-hidden rounded-2xl group transition-all duration-250
+          className="relative overflow-hidden rounded-2xl group transition-all duration-250 border border-black/[0.12] dark:border-white/[0.07]
           shadow-[0_5px_10px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.05)]
           dark:shadow-[0_5px_10px_rgba(var(--accent-rgb),0.1),inset_0_1px_0_rgba(255,255,255,0.05)]"
-          style={{ border: "1px solid rgba(255,255,255,0.07)" }}
         >
           {/* glow orbs — static behind slides */}
           <div className="absolute -top-20 -left-10 w-80 h-80 rounded-full blur-[120px] pointer-events-none opacity-20"
@@ -219,7 +218,7 @@ const Dashboard = () => {
                 transition={{ duration: 0.28, ease: "easeInOut" }}
                 className="p-8"
               >
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6">
+                <div className="relative z-30 flex flex-col md:flex-row md:items-center gap-6">
                   <div className="flex-1 min-w-0">
                     {/* deadline badge */}
                     {activeSet && (
@@ -255,21 +254,21 @@ const Dashboard = () => {
 
                     <p className="text-secondary text-sm leading-relaxed mb-6 max-w-md">
                       {activeSet
-                        ? `Target Level: ${activeSet.targetLevel} · ${activeSet.questions?.length || 0} questions · ${activeSet.questions?.reduce((a, q) => a + (q.points || 0), 0) || 0} XP total`
+                        ? `Target Level: ${activeSet.targetLevel} · ${activeSet.questions?.length || 0} questions `
                         : "Push your limits with this week's elite challenge. Solve complex optimizations and climb the global leaderboards."}
                     </p>
 
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3 z-10">
                       <Link
                         to={activeSet ? `/missions?setId=${activeSet._id}` : "/missions"}
-                        className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-black text-white transition-all hover:opacity-90 active:scale-95"
+                        className="inline-flex items-center gap-2 px-6 py-2.5 z-30 rounded-xl text-sm font-black text-white transition-all hover:opacity-90 active:scale-95"
                         style={{ background: "linear-gradient(135deg, rgb(var(--accent-rgb)), rgba(168,85,247,0.9))", boxShadow: "0 4px 20px rgba(var(--accent-rgb),0.4)" }}
                       >
                         Enter Arena <FiArrowRight size={14} />
                       </Link>
                       <div className="inline-flex items-center gap-1.5 text-xs font-bold text-tertiary">
                         <FiZap className="text-yellow-400" size={13} />+
-                        {activeSet?.questions?.reduce((a, q) => a + (q.points || 0), 0) || 50}{" "}Bonus XP
+                        {activeSet?.questions?.reduce((a, q) => a + (q.points || 0), 0) || 50} XP
                       </div>
                     </div>
                   </div>
@@ -296,7 +295,8 @@ const Dashboard = () => {
                   style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.35) 0%, transparent 100%)' }} />
                 <svg
                   viewBox="0 0 24 24" fill="none" strokeWidth="2" stroke="currentColor"
-                  className="relative ml-3 w-5 h-5 text-white/0 group-hover/left:text-white/70 transition-all duration-300 group-hover/left:-translate-x-0.5"
+                  className={`relative ml-3 w-5 h-5 transition-all duration-300
+                    ${clampedIdx === 0 ? 'text-white/0' : 'text-black/35 dark:text-white/35 group-hover/left:text-accent group-hover/left:-translate-x-0.5'}`}
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
@@ -312,7 +312,8 @@ const Dashboard = () => {
                   style={{ background: 'linear-gradient(to left, rgba(0,0,0,0.35) 0%, transparent 100%)' }} />
                 <svg
                   viewBox="0 0 24 24" fill="none" strokeWidth="2" stroke="currentColor"
-                  className="relative mr-3 w-5 h-5 text-white/0 group-hover/right:text-white/70 transition-all duration-300 group-hover/right:translate-x-0.5"
+                  className={`relative mr-3 w-5 h-5 transition-all duration-300
+                    ${clampedIdx === activeSets.length - 1 ? 'text-white/0' : 'text-black/35 dark:text-white/35 group-hover/right:text-accent group-hover/right:translate-x-0.5'}`}
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                 </svg>
@@ -374,7 +375,7 @@ const Dashboard = () => {
           ].map(({ icon: Icon, label, value, delta, color }) => (
             <div
               key={label}
-              className="flex items-center gap-3 p-4 rounded-xl border border-black/[0.1] dark:border-white/[0.11] transition-all hover:scale-[1.02]
+              className="flex items-center gap-3 p-4 rounded-xl border border-black/[0.15] dark:border-white/[0.11] transition-all hover:scale-[1.02]
               hover:shadow-[0_10px_20px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.05)]
               dark:hover:shadow-[0_0_40px_rgba(var(--accent-rgb),0.25),0_10px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.05)]"
             >
@@ -425,7 +426,7 @@ const Dashboard = () => {
                 onChange={(e) => hf("search", e.target.value)}
               />
             </div>
-            <div className="flex items-center gap-1 bg-white/[0.03] border border-white/[0.06] rounded-xl px-3 h-8">
+            <div className="flex items-center gap-1 bg-white/[0.03] border border-black/[0.12] dark:border-white/[0.06] rounded-xl px-3 h-8">
               <FiFilter size={10} className="text-tertiary" />
               <select
                 className="bg-transparent text-xs text-secondary font-semibold outline-none"
@@ -450,7 +451,7 @@ const Dashboard = () => {
                     : v === "Hard"
                       ? "bg-red-500/15 border-red-500/40 text-red-400"
                       : "bg-accent/15 border-accent/40 text-accent"
-                : "bg-white/[0.03] border-white/[0.07] text-tertiary hover:text-secondary hover:border-white/20";
+                : "bg-white/[0.03] border-black/[0.12] dark:border-white/[0.07] text-tertiary hover:text-secondary hover:border-white/20";
               return (
                 <button
                   key={v}
@@ -527,7 +528,7 @@ const Dashboard = () => {
                             ch.tags.slice(0, 3).map((tag, idx) => (
                               <span
                                 key={idx}
-                                className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-white/5 text-secondary border border-white/5"
+                                className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-white/5 text-secondary border border-black/[0.1] dark:border-white/5"
                               >
                                 {tag}
                               </span>
@@ -537,7 +538,7 @@ const Dashboard = () => {
                             ch.category.split(',').slice(0, 3).map((cat, idx) => (
                               <span
                                 key={`cat-${idx}`}
-                                className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-white/5 text-secondary border border-white/5"
+                                className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-white/5 text-secondary border border-black/[0.1] dark:border-white/5"
                               >
                                 {cat.trim()}
                               </span>
@@ -558,7 +559,7 @@ const Dashboard = () => {
             <FiActivity className="text-accent" size={16} /> Recent Activity
           </h2>
 
-          <div className="rounded-2xl border border-white/[0.06] overflow-hidden">
+          <div className="rounded-2xl border border-black/[0.12] dark:border-white/[0.06] overflow-hidden">
             {recentSubs.length === 0 ? (
               <div className="p-8 text-center">
                 <FiCpu size={32} className="text-white/10 mx-auto mb-3" />
