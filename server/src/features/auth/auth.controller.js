@@ -558,7 +558,7 @@ const updateMe = async (req, res, next) => {
         }
       },
       { new: true, runValidators: true }
-    );
+    ).populate('clan', 'name tag profilePicture');
 
     return sendSuccess(res, {
       data: user,

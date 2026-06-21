@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FiUser, FiMapPin, FiGithub, FiTwitter, FiGlobe, FiSave, FiCpu, FiBookOpen, FiLayers, FiGrid, FiAward, FiCalendar, FiLink, FiZap, FiEdit2, FiLinkedin, FiCheck } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/useAuth';
@@ -11,6 +12,7 @@ import Logo from '../components/Logo';
 
 const Settings = () => {
   const { user, updateUser } = useAuth();
+  const navigate = useNavigate();
   const fileInputRef = React.useRef(null);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [formData, setFormData] = useState({
@@ -118,6 +120,7 @@ const Settings = () => {
       const res = await api.put('/api/auth/update-me', formData);
       updateUser(res.data.data);
       toast.success('Profile updated successfully!');
+      navigate('/profile');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to update profile');
     } finally {
