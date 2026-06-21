@@ -517,7 +517,7 @@ const ChallengeDetails = () => {
         : "bg-red-500/15";
 
   return (
-    <div className="flex flex-col w-full min-h-[calc(100vh-8rem)] lg:h-[calc(100vh-8rem)]">
+    <div className="flex flex-col w-full challenge-details-theme min-h-[calc(100vh-8rem)] lg:h-[calc(100vh-8rem)]">
       {/* Header */}
       <div className="flex items-center gap-3 pb-1.5 border-b border-black/10 dark:border-white/10 mb-2 shrink-0 px-4 sm:px-6 lg:px-8 pt-2.5">
         <Link
@@ -599,7 +599,7 @@ const ChallengeDetails = () => {
           <div className="flex-1 overflow-y-auto p-5">
             {leftTab === "description" ? (
               <div
-                className="leetcode-description text-sm leading-relaxed text-primary/90"
+                className="leetcode-description"
                 dangerouslySetInnerHTML={{ __html: sanitizedDescription }}
               />
             ) : leftTab === "submissions" ? (
