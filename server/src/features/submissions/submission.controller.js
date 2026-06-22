@@ -187,18 +187,26 @@ const getLeaderboard = async (req, res, next) => {
     // $facet returns total count + the current page in a single round-trip.
     const [result] = await Submission.aggregate([
       { $match: match },
+      // 1. Group by userId and challengeId to count each challenge only once per user
+      {
+        $group: {
+          _id: { userId: '$userId', challengeId: '$challengeId' }
+        }
+      },
+      // 2. Lookup the challenge details
       {
         $lookup: {
           from: 'challenges',
-          localField: 'challengeId',
+          localField: '_id.challengeId',
           foreignField: '_id',
           as: 'challenge',
         },
       },
       { $unwind: '$challenge' },
+      // 3. Group by userId to sum up total distinct points and solved count
       {
         $group: {
-          _id: '$userId',
+          _id: '$_id.userId',
           solvedCount: { $sum: 1 },
           totalPoints: { $sum: '$challenge.points' },
         },
@@ -351,16 +359,37 @@ const updateSubmissionStatus = async (req, res, next) => {
       },
     });
 
-    // Award XP and increment solved counter when accepted
-    if (status === 'Accepted' && submission.userId?._id) {
+    let xpAwarded = false;
+
+    // Handle XP allocation/revocation to prevent XP farming
+    const wasAlreadyAccepted = existingSubmission.status === 'Accepted';
+    const isNowAccepted = status === 'Accepted';
+
+    if (submission.userId?._id && wasAlreadyAccepted !== isNowAccepted) {
       const User = require('../users/User.model');
       const challengePoints = submission.challengeId?.points || 0;
-      await User.findByIdAndUpdate(
-        submission.userId._id,
-        {
-          $inc: { points: challengePoints, solvedProblems: 1 },
-        }
-      );
+      
+      // Check if they have ANY OTHER accepted submissions for this challenge
+      const hasOtherAccepted = await Submission.exists({
+        userId: submission.userId._id,
+        challengeId: submission.challengeId._id,
+        status: 'Accepted',
+        _id: { $ne: submission._id }
+      });
+
+      if (!hasOtherAccepted) {
+        if (isNowAccepted) xpAwarded = true;
+
+        const pointsDiff = isNowAccepted ? challengePoints : -challengePoints;
+        const solvedDiff = isNowAccepted ? 1 : -1;
+
+        await User.findByIdAndUpdate(
+          submission.userId._id,
+          {
+            $inc: { points: pointsDiff, solvedProblems: solvedDiff },
+          }
+        );
+      }
     }
 
     const { emitEvent } = require('../../../config/socket');
@@ -394,7 +423,7 @@ const updateSubmissionStatus = async (req, res, next) => {
           </p>
           <div style="background-color: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin: 20px 0;">
             <p style="margin: 0; font-size: 14px; color: #d1d5db;"><strong>Status:</strong> <span style="color: ${color}; font-weight: bold;">${safeStatus}</span></p>
-            ${status === 'Accepted' ? `<p style="margin: 10px 0 0 0; font-size: 14px; color: #d1d5db;"><strong>+${submission.challengeId?.points || 0} XP</strong> has been awarded to your account!</p>` : ''}
+            ${xpAwarded ? `<p style="margin: 10px 0 0 0; font-size: 14px; color: #d1d5db;"><strong>+${submission.challengeId?.points || 0} XP</strong> has been awarded to your account!</p>` : ''}
             ${safeFeedback ? `<hr style="border-color: #374151;"/><p style="margin: 10px 0 0 0; font-size: 14px; color: #d1d5db;"><strong>Chief's Feedback:</strong><br/><br/><em>&ldquo;${safeFeedback}&rdquo;</em></p>` : ''}
           </div>
           <p style="color: #9ca3af; font-size: 14px; margin-top: 30px; text-align: center;">Keep coding and progressing!<br/>- The Algorithm Arena Team</p>
