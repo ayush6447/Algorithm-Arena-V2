@@ -428,6 +428,21 @@ const QuestionSetsTab = () => {
         />
       )}
 
+      {showConfirmUpload && (
+        <ConfirmDialog
+          title="Duplicate Question Warning"
+          message={confirmUploadMessage}
+          onConfirm={() => {
+            setShowConfirmUpload(false);
+            if (pendingPublishData) executePublish(pendingPublishData);
+          }}
+          onCancel={() => {
+            setShowConfirmUpload(false);
+            setPendingPublishData(null);
+          }}
+        />
+      )}
+
       {/* Import Modal */}
       <AnimatePresence>
         {importModalOpen&&(

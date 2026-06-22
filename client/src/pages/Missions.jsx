@@ -43,39 +43,6 @@ const FALLBACK_CREATED_AT = '2026-01-01T00:00:00.000Z';
 const getRGB = (d) =>
   d === "Easy" ? "34,197,94" : d === "Medium" ? "234,179,8" : d === "Hard" ? "239,68,68" : "99,102,241";
 
-const getLocalDrafts = () => {
-  const drafts = [];
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith("challenge-draft:")) {
-        const challengeId = key.split(":")[1];
-        const raw = localStorage.getItem(key);
-        if (raw) {
-          const draft = JSON.parse(raw);
-          const hasCode = draft.codeByLang && Object.values(draft.codeByLang).some(c => c && c.trim());
-          if (draft.repoUrl?.trim() || hasCode) {
-            drafts.push({
-              _id: `draft-${challengeId}`,
-              challengeId: {
-                _id: challengeId,
-                title: draft.challengeTitle || "Unknown Challenge",
-                difficulty: draft.challengeDifficulty || "Easy",
-                points: draft.challengePoints || 0,
-              },
-              status: "Attempted",
-              submittedAt: draft.updatedAt || new Date().toISOString(),
-            });
-          }
-        }
-      }
-    }
-  } catch (e) {
-    console.error("Error reading drafts from localStorage", e);
-  }
-  return drafts;
-};
-
 const Missions = () => {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -104,6 +71,11 @@ const Missions = () => {
     setFilters(prev => ({ ...prev, setId: '' }));
   };
 
+  useEffect(() => {
+    const currentSetId = searchParams.get('setId') || '';
+    setFilters(prev => ({ ...prev, setId: currentSetId, page: 1 }));
+  }, [searchParams]);
+
   const submissionsQuery = useQuery({
     queryKey: ['my-submissions'],
     queryFn: async () => {
@@ -117,33 +89,13 @@ const Missions = () => {
   const subsMap = useMemo(() => {
     const map = {};
     (submissionsQuery.data || []).forEach(sub => {
-      const cid = sub.challengeId?._id || sub.challengeId;
-      if (!cid) return;
-      if (!map[cid] || sub.status === 'Accepted') {
-        map[cid] = sub.status;
+      // Prioritize Accepted over Pending if multiple
+      if (!map[sub.challengeId?._id] || sub.status === 'Accepted') {
+        map[sub.challengeId?._id] = { status: sub.status, subId: sub._id };
       }
     });
     return map;
   }, [submissionsQuery.data]);
-
-  const drafts = useMemo(() => getLocalDrafts(), []);
-
-  const getBadge = (chId) => {
-    if (subsMap[chId] === 'Accepted') {
-      return { label: 'Solved', cls: 'bg-green-500/10 text-green-400 border-green-500/20' };
-    }
-    const hasDraft = drafts.some((d) => d.challengeId?._id === chId);
-    if (hasDraft) {
-      return { label: 'Attempted', cls: 'bg-blue-500/10 text-blue-400 border-blue-500/20' };
-    }
-    if (subsMap[chId] === 'Rejected') {
-      return { label: 'Rejected', cls: 'bg-red-500/10 text-red-400 border-red-500/20' };
-    }
-    if (subsMap[chId] === 'Pending') {
-      return { label: 'Pending Review', cls: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' };
-    }
-    return null;
-  };
   const [filters, setFilters] = useState({
     page: 1,
     limit: 50, // Increase limit when grouping to show all related items
@@ -213,7 +165,40 @@ const Missions = () => {
       return [];
     }
 
-    return apiData;
+    // Deduplication logic for "All Missions"
+    const byTitle = {};
+    const now = new Date();
+    
+    apiData.forEach(ch => {
+      const title = ch.title.toLowerCase();
+      if (!byTitle[title]) {
+        byTitle[title] = [];
+      }
+      byTitle[title].push(ch);
+    });
+
+    const deduped = Object.values(byTitle).map(group => {
+      if (group.length === 1) return group[0];
+      
+      // Filter those with a future deadline
+      const upcoming = group.filter(c => c.questionSetId && c.questionSetId.deadline && new Date(c.questionSetId.deadline) > now);
+      
+      if (upcoming.length > 0) {
+        // Sort by earliest deadline first
+        upcoming.sort((a, b) => new Date(a.questionSetId.deadline) - new Date(b.questionSetId.deadline));
+        return upcoming[0];
+      }
+      
+      // If all have passed, return the most recent one (latest deadline)
+      group.sort((a, b) => {
+        const dA = a.questionSetId?.deadline ? new Date(a.questionSetId.deadline) : new Date(0);
+        const dB = b.questionSetId?.deadline ? new Date(b.questionSetId.deadline) : new Date(0);
+        return dB - dA;
+      });
+      return group[0];
+    });
+
+    return deduped;
   }, [challengesQuery.data, filters.setId, activeSet]);
 
   const meta = challengesQuery.data?.meta || { page: 1, totalPages: 1, total: challenges.length };
@@ -260,19 +245,13 @@ const Missions = () => {
   // API has no per-user status, so we match against the user's own submissions.
   const statusFilteredChallenges = useMemo(() => {
     if (filters.status === 'Accepted') {
-      return challenges.filter((ch) => subsMap[ch._id] === 'Accepted');
+      return challenges.filter((ch) => subsMap[ch._id]?.status === 'Accepted');
     }
     if (filters.status === 'Pending') {
-      return challenges.filter((ch) => subsMap[ch._id] === 'Pending');
-    }
-    if (filters.status === 'Rejected') {
-      return challenges.filter((ch) => subsMap[ch._id] === 'Rejected');
-    }
-    if (filters.status === 'Attempted') {
-      return challenges.filter((ch) => drafts.some(d => d.challengeId?._id === ch._id) && subsMap[ch._id] !== 'Accepted');
+      return challenges.filter((ch) => subsMap[ch._id]?.status === 'Pending');
     }
     return challenges;
-  }, [challenges, filters.status, subsMap, drafts]);
+  }, [challenges, filters.status, subsMap]);
 
   const groupedChallenges = useMemo(() => {
     if (filters.grouping === 'none') return { "All Missions": statusFilteredChallenges };
@@ -415,13 +394,9 @@ const Missions = () => {
           </div>
 
           {/* Status Tabs */}
-          <div className="flex bg-glass-border/30 rounded-lg p-1 flex-wrap gap-1">
-            {['All', 'Accepted', 'Pending', 'Rejected', 'Attempted'].map(st => {
-              const label =
-                st === 'Accepted' ? 'Solved' :
-                st === 'Pending' ? 'Pending Review' :
-                st === 'Rejected' ? 'Rejected' :
-                st === 'Attempted' ? 'Attempted' : 'All';
+          <div className="flex bg-glass-border/30 rounded-lg p-1">
+            {['All', 'Accepted', 'Pending'].map(st => {
+              const label = st === 'Accepted' ? 'Solved' : st === 'Pending' ? 'Pending Review' : 'All';
               return (
                 <button
                   key={st}
@@ -526,12 +501,12 @@ const Missions = () => {
                               </span>
 
                               <div className="flex items-center gap-2">
-                                {(() => {
-                                  const badge = getBadge(challenge._id);
-                                  return badge && (
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${badge.cls}`}>{badge.label}</span>
-                                  );
-                                })()}
+                                {subsMap[challenge._id]?.status === 'Accepted' && (
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-green-500/10 text-green-400 border border-green-500/20">Approved</span>
+                                )}
+                                {subsMap[challenge._id]?.status === 'Pending' && (
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">Pending Review</span>
+                                )}
                                 <span className="text-secondary text-sm font-bold">{challenge.points} XP</span>
                               </div>
                             </div>
@@ -586,12 +561,12 @@ const Missions = () => {
                               </div>
                             </div>
                             <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                              {(() => {
-                                const badge = getBadge(challenge._id);
-                                return badge && (
-                                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${badge.cls} hidden sm:block`}>{badge.label}</span>
-                                );
-                              })()}
+                              {subsMap[challenge._id]?.status === 'Accepted' && (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-green-500/10 text-green-400 border border-green-500/20 hidden sm:block">Approved</span>
+                              )}
+                              {subsMap[challenge._id]?.status === 'Pending' && (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 hidden sm:block">Pending Review</span>
+                              )}
                               <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
                                 challenge.difficulty === "Easy" ? "bg-green-500/20 text-green-500" :
                                 challenge.difficulty === "Medium" ? "bg-yellow-500/20 text-yellow-500" : "bg-red-500/20 text-red-500"
