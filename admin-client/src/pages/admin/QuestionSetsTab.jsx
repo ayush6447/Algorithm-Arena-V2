@@ -37,6 +37,8 @@ const QuestionSetsTab = () => {
   const [snippetLang,setSnippetLang] = useState('');
   const [editingSetId,setEditingSetId] = useState(null);
   const [deleteSetTarget,setDeleteSetTarget] = useState(null);
+  const [publishError, setPublishError] = useState(null);
+  const [publishWarning, setPublishWarning] = useState(null);
 
   const blankForm = ()=>({title:'',weekNumber:1,deadline:'',targetLevel:'Both',questions:[{...initialQuestionState}]});
 
@@ -143,7 +145,64 @@ const QuestionSetsTab = () => {
     });
     setView('create');
   };
-  const handlePublish=(e)=>{e.preventDefault();const fq=form.questions.map(q=>({...q,testCases:prepareTestCases(q.testCases||[])}));if(editingSetId){updateSetMutation.mutate({id:editingSetId,body:{...form,questions:fq}})}else{createSetMutation.mutate({...form,questions:fq})}};
+
+  const executePublish = () => {
+    const fq = form.questions.map(q => ({...q, testCases: prepareTestCases(q.testCases || [])}));
+    if (editingSetId) {
+      updateSetMutation.mutate({ id: editingSetId, body: { ...form, questions: fq } });
+    } else {
+      createSetMutation.mutate({ ...form, questions: fq });
+    }
+    setPublishWarning(null);
+    setPublishError(null);
+  };
+
+  const handlePublish = (e) => {
+    e.preventDefault();
+    
+    // Find duplicates
+    const existingSets = setsQuery.data || [];
+    let errorDup = null;
+    let warningDup = null;
+    const now = new Date();
+
+    for (const currentQ of form.questions) {
+      const qTitle = currentQ.title?.trim().toLowerCase();
+      if (!qTitle) continue;
+
+      for (const set of existingSets) {
+        if (set._id === editingSetId) continue; // Skip the set currently being edited
+        
+        const hasDuplicate = (set.questions || []).some(
+          existingQ => existingQ.title?.trim().toLowerCase() === qTitle
+        );
+
+        if (hasDuplicate) {
+          const setDeadline = new Date(set.deadline);
+          const isPassed = setDeadline < now;
+
+          if (!isPassed && !errorDup) {
+            errorDup = { questionTitle: currentQ.title, setTitle: set.title, deadline: setDeadline.toLocaleDateString() };
+          } else if (isPassed && !warningDup) {
+            warningDup = { questionTitle: currentQ.title, setTitle: set.title };
+          }
+        }
+      }
+    }
+
+    if (errorDup) {
+      setPublishError(errorDup);
+      return;
+    }
+    
+    if (warningDup) {
+      setPublishWarning(warningDup);
+      return;
+    }
+
+    executePublish();
+  };
+
   const handleCreateChallengeSubmit=(e)=>{e.preventDefault();createChallengeMutation.mutate({...createChallengeForm,testCases:prepareTestCases(createChallengeForm.testCases)})};
   const handleUpdateChallengeSubmit=(e)=>{e.preventDefault();if(!editingChallenge)return;updateChallengeMutation.mutate({id:editingChallenge._id,body:{title:editingChallenge.title,description:editingChallenge.description,link:editingChallenge.link||'',difficulty:editingChallenge.difficulty,points:Number(editingChallenge.points),category:editingChallenge.category,functionName:editingChallenge.functionName||'',testCases:prepareTestCases(editingChallenge.testCases||[])}})};
 
@@ -379,6 +438,31 @@ const QuestionSetsTab = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Duplicate Dialogs */}
+      {publishError && (
+        <ConfirmDialog 
+          open={true} 
+          title="Duplicate Question Detected" 
+          description={`This particular question '${publishError.questionTitle}' is already published in the set '${publishError.setTitle}' with deadline '${publishError.deadline}'. You cannot upload it again.`} 
+          onConfirm={() => setPublishError(null)} 
+          onCancel={() => setPublishError(null)}
+          confirmLabel="OK"
+          cancelLabel="Close"
+        />
+      )}
+
+      {publishWarning && (
+        <ConfirmDialog 
+          open={true} 
+          title="Question Already Uploaded" 
+          description={`The question '${publishWarning.questionTitle}' was already uploaded on the set '${publishWarning.setTitle}'. Do you want to upload it again?`} 
+          onConfirm={executePublish} 
+          onCancel={() => setPublishWarning(null)}
+          confirmLabel="Confirm"
+          cancelLabel="Cancel"
+        />
+      )}
     </div>
   );
 };
