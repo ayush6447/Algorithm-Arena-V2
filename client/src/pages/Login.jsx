@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { signInWithPopup } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth';
 import { auth, googleProvider } from '../lib/firebase';
 import Card from '../components/Card';
 import PixelBlast from '../components/PixelBlast';
 import { api } from '../lib/api';
 import { useAuth } from '../context/useAuth';
 import Logo from '../components/Logo';
+
+let redirectChecked = false;
 
 const Login = ({ onLoginSuccess }) => {
   const [loading, setLoading] = useState(false);
@@ -36,16 +38,9 @@ const Login = ({ onLoginSuccess }) => {
     return () => observer.disconnect();
   }, []);
 
-  const handleGoogleSignIn = async () => {
-    setLoading(true);
-    setError('');
-
+  const handleAuthSuccess = useCallback(async (idToken) => {
     try {
-      // 1. Firebase Google popup
-      const result = await signInWithPopup(auth, googleProvider);
-      const idToken = await result.user.getIdToken();
-
-      // 2. Send Firebase ID token to our server
+      // Send Firebase ID token to our server
       const res = await api.post('/api/auth/google', { idToken });
       const payload = res.data?.data;
 
@@ -59,14 +54,14 @@ const Login = ({ onLoginSuccess }) => {
         return;
       }
 
-      // 3. Store session
+      // Store session
       login(payload);
 
       if (typeof onLoginSuccess === 'function') {
         onLoginSuccess();
       }
 
-      // 4. Route based on whether username is set
+      // Route based on whether username is set
       const isNewUser = payload?.isNewUser || payload?.user?.isNewUser;
       const usernameSet = payload?.user?.usernameSet ?? payload?.usernameSet;
 
@@ -78,16 +73,77 @@ const Login = ({ onLoginSuccess }) => {
         navigate('/dashboard');
       }
     } catch (err) {
-      // Don't show error if user just closed the popup
-      if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
+      const message = err.userMessage || err?.response?.data?.message || 'Sign in failed';
+      setError(message);
+      toast.error(message);
+      setLoading(false);
+    }
+  }, [navigate, login, onLoginSuccess]);
+
+  useEffect(() => {
+    if (redirectChecked) return;
+    redirectChecked = true;
+
+    const handleRedirectResult = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          const idToken = await result.user.getIdToken();
+          await handleAuthSuccess(idToken);
+        } else {
+          setLoading(false);
+        }
+      } catch (err) {
+        const message = err.userMessage || err?.response?.data?.message || 'Sign in failed';
+        setError(message);
+        toast.error(message);
         setLoading(false);
+      }
+    };
+
+    handleRedirectResult();
+  }, [navigate, login, onLoginSuccess, handleAuthSuccess]);
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      // 1. Try Firebase Google popup first
+      const result = await signInWithPopup(auth, googleProvider);
+      const idToken = await result.user.getIdToken();
+      await handleAuthSuccess(idToken);
+    } catch (err) {
+      // Don't show error if user just closed the popup
+      if (err?.code === 'auth/popup-closed-by-user') {
+        setLoading(false);
+        return;
+      }
+
+      // If popup is blocked by the browser
+      if (err?.code === 'auth/popup-blocked' || err?.code === 'auth/cancelled-popup-request') {
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+          toast.error('Google login popup was blocked. Please allow pop-ups for this site in your browser settings.');
+          setLoading(false);
+        } else {
+          toast.loading('Popup blocked. Redirecting to Google Login...', { duration: 3000 });
+          try {
+            await signInWithRedirect(auth, googleProvider);
+          } catch (redirectErr) {
+            const message = redirectErr.userMessage || redirectErr?.response?.data?.message || 'Sign in failed';
+            setError(message);
+            toast.error(message);
+            setLoading(false);
+          }
+        }
         return;
       }
 
       const message = err.userMessage || err?.response?.data?.message || 'Sign in failed';
       setError(message);
       toast.error(message);
-    } finally {
       setLoading(false);
     }
   };
