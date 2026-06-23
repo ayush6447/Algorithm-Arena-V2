@@ -92,19 +92,6 @@ export const AuthProvider = ({ children }) => {
     }
     localStorage.setItem('user', JSON.stringify(normalizedUser));
     setUser(normalizedUser);
-
-    // Show daily XP bonus toast if awarded
-    if (payload?.dailyXpAwarded) {
-      setTimeout(() => {
-        toast.success('🔥 +50 XP Daily Login Bonus!', {
-          duration: 4000,
-          style: {
-            background: '#0f1115',
-            color: '#fff',
-            border: '1px solid rgba(168,85,247,0.3)',
-            boxShadow: '0 0 20px rgba(168,85,247,0.2)',
-          },
-          iconTheme: {
             primary: '#a855f7',
             secondary: '#fff',
           },

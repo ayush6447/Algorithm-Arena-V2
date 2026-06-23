@@ -195,7 +195,6 @@ const googleAuth = async (req, res, next) => {
     const isFirstLoginToday = !lastLogin || lastLogin < today;
 
     if (isFirstLoginToday && !isNewUser) {
-      user.points = (user.points || 0) + 50;
       dailyXpAwarded = true;
     }
 
@@ -388,7 +387,6 @@ const googleLogin = async (req, res, next) => {
     const isFirstLoginToday = !lastLogin || lastLogin < today;
 
     if (isFirstLoginToday) {
-      user.points = (user.points || 0) + 50;
       dailyXpAwarded = true;
     }
 
@@ -534,7 +532,6 @@ const getMe = async (req, res, next) => {
     const lastLogin = user.lastLoginDate ? new Date(user.lastLoginDate) : null;
 
     if (!lastLogin || lastLogin < today) {
-      user.points = (user.points || 0) + 50;
       user.lastLoginDate = now;
       await User.findByIdAndUpdate(user._id, {
         points: user.points,
