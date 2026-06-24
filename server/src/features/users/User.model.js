@@ -48,6 +48,11 @@ const userSchema = new mongoose.Schema({
     enum: ['user', 'moderator', 'admin', 'clan-chief', 'superAdmin'],
     default: 'user',
   },
+  customTitle: {
+    type: String,
+    default: '',
+    maxlength: 30,
+  },
   clan: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Clan',
