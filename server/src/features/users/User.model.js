@@ -109,7 +109,7 @@ const userSchema = new mongoose.Schema({
     default: Date.now,
   },
   bio: { type: String, default: '' },
-  branch: { type: String, default: '', enum: ['B.Tech CSE', 'B.Tech ECE', 'B.Tech EEE', 'MCA', ''] },
+  branch: { type: String, default: '' },
   year: { type: String, default: '', enum: ['First Year', 'Second Year', 'Third Year', 'Fourth Year', ''] },
   section: { type: String, default: '' },
   lastConfirmedAt: {
