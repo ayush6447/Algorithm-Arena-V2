@@ -28,7 +28,7 @@ const userSchema = new mongoose.Schema({
     trim: true,
     maxlength: 60,
     validate: {
-      validator: (v) => !v || /^[a-zA-Z\s'\-\.]+$/.test(v),
+      validator: (v) => !v || /^[\p{L}\w\s'\-\.\(\),]+$/u.test(v),
       message: 'Name contains invalid characters',
     },
   },
