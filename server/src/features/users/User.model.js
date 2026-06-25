@@ -74,6 +74,16 @@ const userSchema = new mongoose.Schema({
     enum: ['javascript', 'python', 'java', 'cpp', 'c'],
     default: 'javascript',
   },
+  editorThemeDark: {
+    type: String,
+    enum: ['default', 'algo-arena-dark', 'vs-dark', 'hc-black', 'dracula', 'one-dark', 'monokai', 'nord', 'github-dark'],
+    default: 'default',
+  },
+  editorThemeLight: {
+    type: String,
+    enum: ['default', 'algo-arena-light', 'vs', 'solarized-light'],
+    default: 'default',
+  },
   points: {
     type: Number,
     default: 0,
@@ -104,7 +114,7 @@ const userSchema = new mongoose.Schema({
     default: Date.now,
   },
   bio: { type: String, default: '' },
-  branch: { type: String, default: '', enum: ['B.Tech CSE', 'B.Tech ECE', 'B.Tech EEE', 'MCA', ''] },
+  branch: { type: String, default: '' },
   year: { type: String, default: '', enum: ['First Year', 'Second Year', 'Third Year', 'Fourth Year', ''] },
   section: { type: String, default: '' },
   lastConfirmedAt: {

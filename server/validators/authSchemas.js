@@ -26,7 +26,7 @@ const claimUsernameSchema = {
       .min(6, 'Registration number must be at least 6 characters')
       .max(20, 'Registration number must be at most 20 characters')
       .regex(/^[a-zA-Z0-9]+$/, 'Registration number must be alphanumeric'),
-    branch: z.enum(['B.Tech CSE', 'B.Tech ECE', 'B.Tech EEE', 'MCA']),
+    branch: z.string().trim().max(100),
     year: z.enum(['First Year', 'Second Year', 'Third Year', 'Fourth Year']),
     section: z
       .string()
@@ -46,7 +46,7 @@ const url = z.string().trim().url().max(512).optional().or(z.literal(''));
 const updateMeSchema = {
   body: z.object({
     bio:            z.string().trim().max(500).optional(),
-    branch:         z.enum(['B.Tech CSE', 'B.Tech ECE', 'B.Tech EEE', 'MCA']).optional().or(z.literal('')),
+    branch:         z.string().trim().max(100).optional().or(z.literal('')),
     year:           z.enum(['First Year', 'Second Year', 'Third Year', 'Fourth Year']).optional().or(z.literal('')),
     section:        z
       .string()
@@ -62,6 +62,8 @@ const updateMeSchema = {
     website:        url,
     profilePicture: z.string().trim().max(4 * 1024 * 1024).optional().or(z.literal('')),
     preferredLanguage: z.enum(['javascript', 'python', 'java', 'cpp', 'c']).optional().or(z.literal('')),
+    editorThemeDark: z.enum(['default', 'algo-arena-dark', 'vs-dark', 'hc-black', 'dracula', 'one-dark', 'monokai', 'nord', 'github-dark']).optional().or(z.literal('')),
+    editorThemeLight: z.enum(['default', 'algo-arena-light', 'vs', 'solarized-light']).optional().or(z.literal('')),
   }).strict(),
 };
 
