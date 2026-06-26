@@ -38,7 +38,8 @@ const getLevelPct = (xp) => ((xp % XP_PER_LEVEL) / XP_PER_LEVEL) * 100;
 const XPBar = ({ xp, loginXp = 0, challengeXp = 0, loginCount = 0 }) => {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true });
-  const pct = getLevelPct(xp);
+  const currentLevelXp = xp % XP_PER_LEVEL;
+  const pct = (currentLevelXp / XP_PER_LEVEL) * 100;
   const lvl = getLevel(xp);
   
   const loginRatio = xp > 0 ? loginXp / xp : 0;
@@ -48,17 +49,17 @@ const XPBar = ({ xp, loginXp = 0, challengeXp = 0, loginCount = 0 }) => {
     <div ref={ref} className="space-y-1.5 relative group">
       <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
         <span className="text-tertiary">Level {lvl}</span>
-        <span style={{ color: "rgb(var(--accent-rgb))" }}>{xp} XP</span>
+        <span style={{ color: "rgb(var(--accent-rgb))" }}>{currentLevelXp} / {XP_PER_LEVEL} XP</span>
       </div>
       
       {/* XP Breakdown Tooltip */}
       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max bg-black/90 dark:bg-white/90 text-white dark:text-black text-[10px] font-bold p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 shadow-xl shadow-black/20 text-center flex flex-col gap-1 pointer-events-none">
         <div className="flex justify-between gap-4">
-           <span className="text-blue-400 dark:text-blue-600">Daily Login XP:</span>
+           <span className="text-[#3b82f6]">Daily Login XP:</span>
            <span>{loginXp} XP ({loginCount} days)</span>
         </div>
         <div className="flex justify-between gap-4">
-           <span className="text-purple-400 dark:text-purple-600">Challenges XP:</span>
+           <span className="text-[#ec4899]">Challenges XP:</span>
            <span>{challengeXp} XP</span>
         </div>
         <div className="mt-1 pt-1 border-t border-white/20 dark:border-black/20 flex justify-between gap-4">
@@ -71,29 +72,20 @@ const XPBar = ({ xp, loginXp = 0, challengeXp = 0, loginCount = 0 }) => {
 
       <div className="h-1.5 rounded-full bg-black/[0.06] dark:bg-white/[0.06] overflow-hidden flex">
         <motion.div
-          className="h-full"
+          className="h-full rounded-full"
           style={{
-            background: "linear-gradient(90deg, rgba(59,130,246,0.9), rgba(99,102,241,0.9))",
-            boxShadow: "0 0 10px rgba(59,130,246,0.5)",
+            background: `linear-gradient(90deg, #3b82f6 0%, #a855f7 ${loginRatio * 100}%, #ec4899 100%)`,
+            boxShadow: `0 0 10px rgba(168,85,247,0.5)`
           }}
           initial={{ width: 0 }}
-          animate={{ width: inView ? `${pct * loginRatio}%` : 0 }}
-          transition={{ duration: 1.4, ease: "easeOut" }}
-        />
-        <motion.div
-          className="h-full rounded-r-full"
-          style={{
-            background: "linear-gradient(90deg, rgba(168,85,247,0.9), rgba(236,72,153,0.9))",
-            boxShadow: "0 0 10px rgba(168,85,247,0.5)",
-          }}
-          initial={{ width: 0 }}
-          animate={{ width: inView ? `${pct * challengeRatio}%` : 0 }}
+          animate={{ width: inView ? `${pct}%` : 0 }}
           transition={{ duration: 1.4, ease: "easeOut" }}
         />
       </div>
-      <p className="text-[10px] text-tertiary">
-        {XP_PER_LEVEL - (xp % XP_PER_LEVEL)} XP to Level {lvl + 1}
-      </p>
+      <div className="flex justify-between text-[10px] text-tertiary">
+        <span>{XP_PER_LEVEL - currentLevelXp} XP to Level {lvl + 1}</span>
+        <span className="font-semibold text-secondary">Total: {xp} XP</span>
+      </div>
     </div>
   );
 };
