@@ -6,3 +6,4 @@ node_modules
 !.env.example
 brain/
 
+server/DEPLOYMENT_NOTES.md
