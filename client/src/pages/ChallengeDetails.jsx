@@ -36,6 +36,8 @@ import {
   FiMaximize2,
   FiMinimize2,
   FiInfo,
+  FiAlertTriangle,
+  FiX,
 } from "react-icons/fi";
 
 // Monaco & Shared Assets
@@ -46,6 +48,7 @@ import { LANGUAGE_MAP, LANGUAGE_OPTIONS } from "../constants/languages";
 import SkeletonCard from "../components/SkeletonCard";
 import { api } from "../lib/api";
 import { MANUAL_TOPICS } from "../constants/manualContent";
+import FeedbackDialog from "../components/FeedbackDialog";
 
 import { useAuth } from "../context/useAuth";
 
@@ -147,6 +150,9 @@ const ChallengeDetails = () => {
   const [selectedCaseIdx, setSelectedCaseIdx] = useState(0);
   const [runOutput, setRunOutput] = useState(null);
   const [running, setRunning] = useState(false);
+  const [showSubmitAnyway, setShowSubmitAnyway] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+
 
   // Review mode state
   const [reviewComment, setReviewComment] = useState("");
@@ -324,6 +330,10 @@ const ChallengeDetails = () => {
   const codeSnippet =
     codeByLang[language] ?? defaultStarterByLanguage[language] ?? "";
 
+  useEffect(() => {
+    setShowSubmitAnyway(false);
+  }, [codeSnippet, language, repoUrl]);
+
   // Pre-load submitted code into editor when in review mode
   useEffect(() => {
     if (!isReviewMode || !reviewQuery.data) return;
@@ -385,13 +395,9 @@ const ChallengeDetails = () => {
   };
 
   // --- JUDGE0 RUN LOGIC ---
-  const handleRun = async () => {
-    if (!codeSnippet.trim()) return toast.error("No code to run.");
-
+  const runTestCases = async () => {
     const testCases = challengeQuery.data?.testCases ?? [];
 
-    // Build the list of runs: one per stored test case, or fall back to
-    // the current manual stdin if no test cases are defined.
     const runs =
       testCases.length > 0
         ? testCases.map((tc) => ({
@@ -401,96 +407,97 @@ const ChallengeDetails = () => {
           }))
         : [{ label: "Run", stdinValue: stdin, expected: null }];
 
-    setRunning(true);
-    setBottomCollapsed(false); // always expand the console
-    setBottomTab("output"); // jump straight to Test Result tab
-    setRunOutput(null);
-
     const langId = LANGUAGE_MAP[language]?.id ?? 63;
-    // Each case gets a unique nonce comment to force a fresh execution even
-    // if Judge0 caches by source-code hash.
     const commentChar = language === "python" ? "#" : "//";
     const freshSource = (idx) =>
       b64Encode(
         `${codeSnippet}\n${commentChar} run:${idx}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       );
 
-    try {
-      // ── 1. Batch submit: one independent submission per test case ────────────
-      const batchRes = await fetch(
-        `${JUDGE0_URL}/submissions/batch?base64_encoded=true`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            submissions: runs.map((run, idx) => ({
-              language_id: langId,
-              source_code: freshSource(idx),
-              stdin: b64Encode(run.stdinValue),
-            })),
-          }),
-        },
+    const batchRes = await fetch(
+      `${JUDGE0_URL}/submissions/batch?base64_encoded=true`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          submissions: runs.map((run, idx) => ({
+            language_id: langId,
+            source_code: freshSource(idx),
+            stdin: b64Encode(run.stdinValue),
+          })),
+        }),
+      },
+    );
+    if (!batchRes.ok) {
+      const text = await batchRes.text();
+      throw new Error(
+        `Judge0 batch submit error ${batchRes.status}: ${text}`,
       );
-      if (!batchRes.ok) {
-        const text = await batchRes.text();
-        throw new Error(
-          `Judge0 batch submit error ${batchRes.status}: ${text}`,
-        );
-      }
-      const batchTokens = await batchRes.json();
-      const tokens = batchTokens.map((t) => t.token);
+    }
+    const batchTokens = await batchRes.json();
+    const tokens = batchTokens.map((t) => t.token);
 
-      // ── 2. Poll until every submission is finished ───────────────────────────
-      const tokenList = tokens.join(",");
-      let results = tokens.map(() => null);
+    const tokenList = tokens.join(",");
+    let results = tokens.map(() => null);
 
-      for (let attempt = 0; attempt < 30; attempt++) {
-        await new Promise((r) => setTimeout(r, 1000));
-        const pollRes = await fetch(
-          `${JUDGE0_URL}/submissions/batch?tokens=${tokenList}&base64_encoded=true`,
-        );
-        if (!pollRes.ok) continue;
-        const { submissions } = await pollRes.json();
+    for (let attempt = 0; attempt < 30; attempt++) {
+      await new Promise((r) => setTimeout(r, 1000));
+      const pollRes = await fetch(
+        `${JUDGE0_URL}/submissions/batch?tokens=${tokenList}&base64_encoded=true`,
+      );
+      if (!pollRes.ok) continue;
+      const { submissions } = await pollRes.json();
 
-        submissions.forEach((sub, i) => {
-          const statusId = sub?.status?.id;
-          if (statusId !== 1 && statusId !== 2) {
-            results[i] = {
-              label: runs[i].label,
-              expected: runs[i].expected,
-              stdinValue: runs[i].stdinValue,
-              token: tokens[i],
-              stdout: b64Decode(sub.stdout),
-              stderr: b64Decode(sub.stderr),
-              compile_output: b64Decode(sub.compile_output),
-              status: sub.status,
-              time: sub.time,
-              memory: sub.memory,
-            };
-          }
-        });
-
-        const ready = results.filter(Boolean);
-        if (ready.length > 0) setRunOutput({ cases: ready });
-        if (results.every(Boolean)) break;
-      }
-
-      // Mark any that timed out
-      results = results.map(
-        (r, i) =>
-          r ?? {
+      submissions.forEach((sub, i) => {
+        const statusId = sub?.status?.id;
+        if (statusId !== 1 && statusId !== 2) {
+          results[i] = {
             label: runs[i].label,
             expected: runs[i].expected,
             stdinValue: runs[i].stdinValue,
-            stdout: "",
-            stderr: "Timed out waiting for Judge0 result.",
-            compile_output: "",
-            status: { description: "Timeout" },
-            time: null,
-            memory: null,
-          },
-      );
-      setRunOutput({ cases: results });
+            token: tokens[i],
+            stdout: b64Decode(sub.stdout),
+            stderr: b64Decode(sub.stderr),
+            compile_output: b64Decode(sub.compile_output),
+            status: sub.status,
+            time: sub.time,
+            memory: sub.memory,
+          };
+        }
+      });
+
+      const ready = results.filter(Boolean);
+      if (ready.length > 0) setRunOutput({ cases: ready });
+      if (results.every(Boolean)) break;
+    }
+
+    results = results.map(
+      (r, i) =>
+        r ?? {
+          label: runs[i].label,
+          expected: runs[i].expected,
+          stdinValue: runs[i].stdinValue,
+          stdout: "",
+          stderr: "Timed out waiting for Judge0 result.",
+          compile_output: "",
+          status: { description: "Timeout" },
+          time: null,
+          memory: null,
+        },
+    );
+    setRunOutput({ cases: results });
+    return results;
+  };
+
+  const handleRun = async () => {
+    if (!codeSnippet.trim()) return toast.error("No code to run.");
+    setRunning(true);
+    setBottomCollapsed(false);
+    setBottomTab("output");
+    setRunOutput(null);
+
+    try {
+      await runTestCases();
     } catch (err) {
       toast.error(err.message || "Failed to execute code.");
       setRunOutput({ error: err.message || "Execution engine unreachable." });
@@ -499,9 +506,7 @@ const ChallengeDetails = () => {
     }
   };
 
-  const handleSubmit = async () => {
-    if (!repoUrl && !codeSnippet.trim())
-      return toast.error("Please provide code or a GitHub link.");
+  const submitToServer = async (userFeedbackVal) => {
     setSubmitting(true);
     try {
       await api.post("/api/submissions", {
@@ -509,16 +514,58 @@ const ChallengeDetails = () => {
         repositoryUrl: repoUrl.trim() || undefined,
         code: codeSnippet.trim() || undefined,
         language,
+        userFeedback: userFeedbackVal || undefined,
       });
       toast.success("Solution submitted.");
       setRepoUrl("");
       setCodeByLang({});
       localStorage.removeItem(draftKey);
+      setShowSubmitAnyway(false);
+      setShowFeedbackModal(false);
       queryClient.invalidateQueries({ queryKey: ["my-submissions", id] });
       queryClient.invalidateQueries({ queryKey: ["dash-summary"] });
       queryClient.invalidateQueries({ queryKey: ["dash-profile"] });
     } catch (err) {
-      toast.error(err.userMessage || "Submission failed.");
+      toast.error(err.response?.data?.message || err.userMessage || "Submission failed.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!repoUrl && !codeSnippet.trim())
+      return toast.error("Please provide code or a GitHub link.");
+
+    if (!codeSnippet.trim()) {
+      await submitToServer();
+      return;
+    }
+
+    setSubmitting(true);
+    setBottomCollapsed(false);
+    setBottomTab("output");
+    setRunOutput(null);
+
+    try {
+      const results = await runTestCases();
+      const hasError = results.some((c) => c.compile_output || c.stderr);
+      const allPassed =
+        !hasError &&
+        results.every(
+          (c) =>
+            c.expected != null && c.stdout?.trim() === c.expected.trim(),
+        );
+
+      if (allPassed) {
+        toast.success("All test cases passed! Submitting solution...");
+        await submitToServer();
+      } else {
+        setShowSubmitAnyway(true);
+        toast.error("Some test cases failed. You can choose to Submit Anyway.");
+      }
+    } catch (err) {
+      toast.error(err.message || "Failed to run verification tests.");
+      setShowSubmitAnyway(true);
     } finally {
       setSubmitting(false);
     }
@@ -917,20 +964,33 @@ const ChallengeDetails = () => {
                   {running ? "Running…" : "Run"}
                 </button>
                 {!isReviewMode && (
-                  <button
-                    onClick={handleSubmit}
-                    disabled={submitting}
-                    className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-white text-xs font-bold transition-all disabled:opacity-60 ${
-                      isSolved ? "bg-amber-600 hover:bg-amber-500" : "bg-green-600 hover:bg-green-500"
-                    }`}
-                  >
-                    {submitting ? (
-                      <FiRefreshCw size={11} className="animate-spin" />
+                  <>
+                    {showSubmitAnyway ? (
+                      <button
+                        onClick={() => setShowFeedbackModal(true)}
+                        disabled={submitting}
+                        className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-white text-xs font-bold transition-all disabled:opacity-60 bg-amber-500 hover:bg-amber-600 shadow-lg shadow-amber-500/20"
+                      >
+                        <FiAlertTriangle size={11} className="text-white animate-pulse" />
+                        Submit Anyway
+                      </button>
                     ) : (
-                      <FiSend size={11} />
+                      <button
+                        onClick={handleSubmit}
+                        disabled={submitting}
+                        className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-white text-xs font-bold transition-all disabled:opacity-60 ${
+                          isSolved ? "bg-amber-600 hover:bg-amber-500" : "bg-green-600 hover:bg-green-500"
+                        }`}
+                      >
+                        {submitting ? (
+                          <FiRefreshCw size={11} className="animate-spin" />
+                        ) : (
+                          <FiSend size={11} />
+                        )}
+                        {submitting ? "Submitting…" : isSolved ? "Re-submit (No XP)" : "Submit"}
+                      </button>
                     )}
-                    {submitting ? "Submitting…" : isSolved ? "Re-submit (No XP)" : "Submit"}
-                  </button>
+                  </>
                 )}
               </div>
             </div>
@@ -1153,32 +1213,41 @@ const ChallengeDetails = () => {
           {isReviewMode ? (
             /* ---- REVIEW MODE PANEL ---- */
             <div className="px-4 py-4 border-t border-black/10 dark:border-white/10 shrink-0 space-y-4">
-              {/* Submitter info */}
-              {reviewQuery.data && (
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
-                  <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center text-accent font-bold text-xs">
-                    <FiUser size={14} />
+               {reviewQuery.data && (
+                <div className="flex flex-col gap-3 p-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center text-accent font-bold text-xs">
+                      <FiUser size={14} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate">
+                        {reviewQuery.data.userId?.username || "Unknown"}
+                      </p>
+                      <p className="text-[10px] text-secondary">
+                        Submitted{" "}
+                        {new Date(reviewQuery.data.submittedAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                        reviewQuery.data.status === "Pending"
+                          ? "bg-yellow-500/15 text-yellow-500"
+                          : reviewQuery.data.status === "Accepted"
+                            ? "bg-green-500/15 text-green-500"
+                            : "bg-red-500/15 text-red-500"
+                      }`}
+                    >
+                      {reviewQuery.data.status}
+                    </span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate">
-                      {reviewQuery.data.userId?.username || "Unknown"}
-                    </p>
-                    <p className="text-[10px] text-secondary">
-                      Submitted{" "}
-                      {new Date(reviewQuery.data.submittedAt).toLocaleString()}
-                    </p>
-                  </div>
-                  <span
-                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                      reviewQuery.data.status === "Pending"
-                        ? "bg-yellow-500/15 text-yellow-500"
-                        : reviewQuery.data.status === "Accepted"
-                          ? "bg-green-500/15 text-green-500"
-                          : "bg-red-500/15 text-red-500"
-                    }`}
-                  >
-                    {reviewQuery.data.status}
-                  </span>
+                  {reviewQuery.data.userFeedback && (
+                    <div className="mt-2 pt-2 border-t border-black/10 dark:border-white/10">
+                      <p className="text-[10px] font-bold text-accent uppercase tracking-wider mb-1">User Feedback (Submitted Anyway)</p>
+                      <p className="text-xs text-primary bg-black/10 dark:bg-black/20 p-2.5 rounded-lg border border-black/10 dark:border-white/5 whitespace-pre-wrap">
+                        {reviewQuery.data.userFeedback}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1244,6 +1313,12 @@ const ChallengeDetails = () => {
           ) : null}
         </div>
       </div>
+      <FeedbackDialog
+        open={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+        onSubmit={submitToServer}
+        isSubmitting={submitting}
+      />
     </div>
   );
 };
