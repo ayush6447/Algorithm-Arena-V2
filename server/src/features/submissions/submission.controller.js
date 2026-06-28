@@ -182,7 +182,7 @@ const getLeaderboard = async (req, res, next) => {
       const User = require('../users/User.model');
       const users = await User.find({ 
         role: { $nin: ['admin', 'superAdmin', 'clan-chief'] },
-        username: { $exists: true, $ne: null, $ne: '' }
+        username: { $exists: true, $nin: [null, ''] }
       })
         .sort({ points: -1, solvedProblems: -1 })
         .select('username profilePicture points solvedProblems')
@@ -248,7 +248,7 @@ const getLeaderboard = async (req, res, next) => {
       const users = await User.find({
         _id: { $in: activeUserIds },
         role: { $nin: ['admin', 'superAdmin', 'clan-chief'] },
-        username: { $exists: true, $ne: null, $ne: '' }
+        username: { $exists: true, $nin: [null, ''] }
       }).select('username profilePicture').lean();
 
       result = users.map(u => {

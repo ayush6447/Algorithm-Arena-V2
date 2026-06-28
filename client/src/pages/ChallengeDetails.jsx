@@ -6,6 +6,13 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 import toast from "react-hot-toast";
 import DOMPurify from "dompurify";
 import {
@@ -48,9 +55,10 @@ const JUDGE0_URL =
 
 /**
  * Converts a single test-case arg value to its stdin representation.
- * Arrays → space-separated elements (standard competitive-programming format)
- * so that Java's Scanner.nextInt() / nextLine() can consume them without
- * an InputMismatchException.  Nested arrays produce one line per row.
+ * Arrays → length on first line, then space-separated elements.
+ * Nested arrays → row count, then each inner array as "length elements..."
+ * This matches the standard competitive-programming format expected by
+ * Java's Scanner and C++ cin.
  */
 const formatArgForStdin = (a) => {
   if (a == null) return "";
@@ -58,14 +66,16 @@ const formatArgForStdin = (a) => {
   if (typeof a === "number" || typeof a === "boolean") return String(a);
   if (Array.isArray(a)) {
     if (a.length > 0 && Array.isArray(a[0])) {
-      // 2-D array: each inner array on its own line, space-separated
-      return a
-        .map((inner) =>
-          Array.isArray(inner) ? inner.join(" ") : String(inner),
-        )
-        .join("\n");
+      // 2-D array: row count, then each inner row as "length el1 el2..."
+      const rows = a.map((inner) =>
+        Array.isArray(inner)
+          ? `${inner.length}\n${inner.join(" ")}`
+          : String(inner),
+      );
+      return `${a.length}\n${rows.join("\n")}`;
     }
-    return a.join(" ");
+    // 1-D array: length on first line, elements on second
+    return `${a.length}\n${a.join(" ")}`;
   }
   return JSON.stringify(a);
 };
@@ -144,7 +154,8 @@ const ChallengeDetails = () => {
   const [grading, setGrading] = useState(false);
 
   // Manual state
-  const [manualTopic, setManualTopic] = useState(MANUAL_TOPICS[0].key);
+  const [manualTopic, setManualTopic] = useState("io");
+  const [mobileTab, setMobileTab] = useState("description"); // "description" or "editor"
 
   // Resizer state
   const [leftWidth, setLeftWidth] = useState(45);
@@ -605,6 +616,24 @@ const ChallengeDetails = () => {
         </div>
       </div>
 
+      {/* Mobile Tab Switcher */}
+      <div className="flex lg:hidden mb-2 px-2 shrink-0">
+        <div className="flex w-full bg-black/10 dark:bg-white/10 rounded-lg p-1 gap-1">
+          <button
+            className={`flex-1 py-2.5 text-xs font-bold rounded-md transition-all ${mobileTab === 'description' ? 'bg-accent text-white shadow-lg' : 'text-secondary hover:text-primary'}`}
+            onClick={() => setMobileTab('description')}
+          >
+            Mission Details
+          </button>
+          <button
+            className={`flex-1 py-2.5 text-xs font-bold rounded-md transition-all ${mobileTab === 'editor' ? 'bg-accent text-white shadow-lg' : 'text-secondary hover:text-primary'}`}
+            onClick={() => setMobileTab('editor')}
+          >
+            Code Editor
+          </button>
+        </div>
+      </div>
+
       {/* Main Split Layout */}
       <div
         ref={containerRef}
@@ -616,7 +645,7 @@ const ChallengeDetails = () => {
       >
         {/* LEFT PANEL */}
         <div
-          className={`flex-1 lg:flex-none flex flex-col min-h-0 macos-glass rounded-xl overflow-hidden w-full lg:w-[var(--left-width)] lg:mb-0 mb-3 h-full ${isMaximized ? "hidden" : ""}`}
+          className={`flex-1 lg:flex-none flex-col min-h-0 macos-glass rounded-xl overflow-hidden w-full lg:w-[var(--left-width)] lg:mb-0 mb-3 h-full ${isMaximized ? "hidden" : ""} ${mobileTab === 'editor' ? 'hidden lg:flex' : 'flex'}`}
         >
           <div className="flex border-b border-black/10 dark:border-white/10 shrink-0">
             <button
@@ -738,27 +767,26 @@ const ChallengeDetails = () => {
 
         {/* RIGHT PANEL - Editor + Console */}
         <div
-          className={`flex-1 lg:flex-none flex flex-col min-h-0 macos-glass rounded-xl overflow-hidden border border-white/5 w-full ${isMaximized ? "lg:w-full" : "lg:w-[var(--right-width)]"} h-full`}
+          className={`flex-1 lg:flex-none flex-col min-h-0 macos-glass rounded-xl overflow-hidden border border-white/5 w-full ${isMaximized ? "lg:w-full" : "lg:w-[var(--right-width)]"} h-full ${mobileTab === 'description' ? 'hidden lg:flex' : 'flex'}`}
         >
           {/* Editor header: language select + utility buttons */}
           <div className="flex items-center justify-between px-3 py-2 border-b border-black/10 dark:border-white/10 shrink-0">
             <div className="flex items-center gap-2">
               <FiCode size={13} className="text-accent" />
-              <select
-                className="bg-transparent border-none text-xs font-semibold text-primary focus:outline-none cursor-pointer"
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-              >
-                {LANGUAGE_OPTIONS.map((opt) => (
-                  <option
-                    key={opt.key}
-                    value={opt.key}
-                    className="bg-[#1a1a24] text-white"
-                  >
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+              <div className="w-[120px]">
+                <Select value={language} onValueChange={(val) => setLanguage(val)}>
+                  <SelectTrigger className="h-7 text-xs bg-transparent border-none focus:ring-0 px-2 py-0 font-semibold text-primary">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LANGUAGE_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.key} value={opt.key} className="text-xs">
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <button
                 title="Open Reference Manual"
                 onClick={handleOpenManual}

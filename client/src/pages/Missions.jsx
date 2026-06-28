@@ -9,6 +9,13 @@ import SkeletonCard from '../components/SkeletonCard';
 import EmptyState from '../components/EmptyState';
 import PageHeader from '../components/PageHeader';
 import { useAuth } from '../context/useAuth';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 
 const buildChallengeQuery = ({
   page,
@@ -443,37 +450,55 @@ const Missions = () => {
           onChange={(e) => handleFilterChange("category", e.target.value)}
         />
 
-        <select
-          className="field-select px-3 text-xs w-full sm:w-auto h-11 py-0"
-          value={filters.limit}
-          onChange={(e) => handleFilterChange("limit", Number(e.target.value))}
-        >
-          <option value={6}>6 / page</option>
-          <option value={12}>12 / page</option>
-          <option value={24}>24 / page</option>
-        </select>
+        <div className="w-full sm:w-auto h-11">
+          <Select
+            value={String(filters.limit)}
+            onValueChange={(val) => handleFilterChange("limit", Number(val))}
+          >
+            <SelectTrigger className="w-full sm:w-[130px] h-full text-xs bg-black/10 dark:bg-white/5 border-none">
+              <SelectValue placeholder="Items per page" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="6">6 / page</SelectItem>
+              <SelectItem value="12">12 / page</SelectItem>
+              <SelectItem value="24">24 / page</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-        <select
-          className="field-select px-3 text-xs w-full sm:w-auto h-11 py-0"
-          value={filters.sortBy}
-          onChange={(e) => handleFilterChange("sortBy", e.target.value)}
-        >
-          <option value="deadline">Deadline</option>
-          <option value="difficulty">Difficulty</option>
-          <option value="createdAt">Newest</option>
-          <option value="points">XP Points</option>
-          <option value="title">Title</option>
-        </select>
+        <div className="w-full sm:w-auto h-11">
+          <Select
+            value={filters.sortBy}
+            onValueChange={(val) => handleFilterChange("sortBy", val)}
+          >
+            <SelectTrigger className="w-full sm:w-[140px] h-full text-xs bg-black/10 dark:bg-white/5 border-none">
+              <SelectValue placeholder="Sort By" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="deadline">Deadline</SelectItem>
+              <SelectItem value="difficulty">Difficulty</SelectItem>
+              <SelectItem value="createdAt">Newest</SelectItem>
+              <SelectItem value="points">XP Points</SelectItem>
+              <SelectItem value="title">Title</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-        <select
-          className="field-select px-3 text-xs w-full sm:w-auto h-11 py-0"
-          value={filters.grouping}
-          onChange={(e) => handleFilterChange("grouping", e.target.value)}
-        >
-          <option value="none">No Grouping</option>
-          <option value="weekly">Weekly</option>
-          <option value="monthly">Monthly</option>
-        </select>
+        <div className="w-full sm:w-auto h-11">
+          <Select
+            value={filters.grouping}
+            onValueChange={(val) => handleFilterChange("grouping", val)}
+          >
+            <SelectTrigger className="w-full sm:w-[140px] h-full text-xs bg-black/10 dark:bg-white/5 border-none">
+              <SelectValue placeholder="Grouping" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">No Grouping</SelectItem>
+              <SelectItem value="weekly">Weekly</SelectItem>
+              <SelectItem value="monthly">Monthly</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         {activeSet && (
           <button
             type="button"

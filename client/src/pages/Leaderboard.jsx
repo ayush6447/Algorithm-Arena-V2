@@ -19,6 +19,13 @@ import { api } from "../lib/api";
 import { useAuth } from "../context/useAuth";
 import MemberHoverCard from "../components/MemberHoverCard";
 import ClanHoverCard from "../components/ClanHoverCard";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 
 const MotionDiv = motion.div;
 const MotionRow = motion.tr;
@@ -316,23 +323,28 @@ const Leaderboard = () => {
         </div>
 
         {/* 4. Results Limit Dropdown */}
-        <select
-          name="leaderboardLimit"
-          className="field-select px-3 text-xs w-full sm:w-auto h-11 py-0"
-          value={filters.limit}
-          onChange={(e) =>
-            setFilters((prev) => ({
-              ...prev,
-              page: 1,
-              limit: Number(e.target.value),
-            }))
-          }
-          disabled={leaderType === "clans"}
-        >
-          <option value={10}>10 / page</option>
-          <option value={20}>20 / page</option>
-          <option value={50}>50 / page</option>
-        </select>
+        <div className="w-full sm:w-auto h-11">
+          <Select
+            value={String(filters.limit)}
+            onValueChange={(val) =>
+              setFilters((prev) => ({
+                ...prev,
+                page: 1,
+                limit: Number(val),
+              }))
+            }
+            disabled={leaderType === "clans"}
+          >
+            <SelectTrigger className="w-full sm:w-[130px] h-full text-xs bg-black/10 dark:bg-white/5 border-none">
+              <SelectValue placeholder="Results per page" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10 / page</SelectItem>
+              <SelectItem value="20">20 / page</SelectItem>
+              <SelectItem value="50">50 / page</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <AnimatePresence mode="wait">
@@ -483,7 +495,13 @@ const Leaderboard = () => {
                     const isMe =
                       leaderType === "individual" &&
                       item.username === user?.username;
-                    const rank = item.rank || index + 1;
+                    // When searching, always show the global rank from the server.
+                    // When paginating (no search), compute display rank from page offset.
+                    const isSearching = !!search.trim();
+                    const rank = isSearching
+                      ? item.rank
+                      : item.rank ||
+                        (filters.page - 1) * filters.limit + index + 1;
                     return (
                       <MotionRow
                         key={item._id}
@@ -500,8 +518,11 @@ const Leaderboard = () => {
                         }}
                       >
                         <td className="p-6">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-glass-surface text-sm font-bold text-primary">
-                            {rank}
+                          <div className="flex flex-col items-center justify-center h-8 w-8 rounded-full bg-glass-surface text-sm font-bold text-primary">
+                            <span>{rank}</span>
+                            {isSearching && (
+                              <span className="text-[8px] font-normal text-secondary leading-none">global</span>
+                            )}
                           </div>
                         </td>
                         <td className="p-6">
