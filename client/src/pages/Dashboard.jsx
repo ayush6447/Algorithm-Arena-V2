@@ -22,6 +22,7 @@ import { useAuth } from "../context/useAuth";
 import SkeletonCard from "../components/SkeletonCard";
 import EmptyState from "../components/EmptyState";
 import ChallengeCard from "../components/Card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { getSessionGreeting } from "../constants/greetings";
 
 /* ── helpers ─────────────────────────────────── */
@@ -669,19 +670,20 @@ const Dashboard = () => {
                 onChange={(e) => hf("search", e.target.value)}
               />
             </div>
-            <div className="flex items-center gap-1 bg-white/[0.03] border border-black/[0.12] dark:border-white/[0.06] rounded-xl px-3 h-8">
-              <FiFilter size={10} className="text-tertiary" />
-              <select
-                className="bg-transparent text-xs text-secondary font-semibold outline-none"
-                value={filters.sortBy}
-                onChange={(e) => hf("sortBy", e.target.value)}
-              >
-                <option value="deadline">Deadline</option>
-                <option value="difficulty">Difficulty</option>
-                <option value="createdAt">Newest</option>
-                <option value="points">XP</option>
-                <option value="title">Title</option>
-              </select>
+            <div className="flex items-center bg-white/[0.03] border border-black/[0.12] dark:border-white/[0.06] rounded-xl px-2 h-8">
+              <FiFilter size={10} className="text-tertiary ml-1 shrink-0" />
+              <Select value={filters.sortBy} onValueChange={(val) => hf("sortBy", val)}>
+                <SelectTrigger className="border-none bg-transparent h-full text-xs text-secondary font-semibold hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none py-0 pl-1 pr-2 w-auto gap-1">
+                  <SelectValue placeholder="Sort By" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="deadline">Deadline</SelectItem>
+                  <SelectItem value="difficulty">Difficulty</SelectItem>
+                  <SelectItem value="createdAt">Newest</SelectItem>
+                  <SelectItem value="points">XP</SelectItem>
+                  <SelectItem value="title">Title</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
